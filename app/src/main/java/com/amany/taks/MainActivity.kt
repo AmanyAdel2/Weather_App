@@ -13,7 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.amany.taks.Search.SearchScreen
+import com.amany.taks.alarm.AlarmAppScreen
 import com.amany.taks.fav.FavoriteScreen
 import com.amany.taks.home.HomeScreen
 import com.amany.taks.nav.Constants
@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-           TAKSTheme (dynamicColor = false, darkTheme = false) {
+            TAKSTheme (dynamicColor = false, darkTheme = false) {
                 val navController = rememberNavController()
                 Surface(color = Color.White) {
                     // Scaffold Component
@@ -68,7 +68,7 @@ fun NavHostContainer(
 
 
             composable("search") {
-                SearchScreen()
+                AlarmAppScreen()
             }
 
 
