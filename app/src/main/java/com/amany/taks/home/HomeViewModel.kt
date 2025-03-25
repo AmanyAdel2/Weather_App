@@ -7,24 +7,26 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.amany.taks.remote.WeatherState
 import com.amany.taks.repository.WeatherRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
 class HomeViewModel(private val weatherRepository: WeatherRepository):ViewModel(){
-    private val _currentWeather: MutableStateFlow<WeatherState> = MutableStateFlow<WeatherState>(WeatherState.Loading)
-    val currentWeather : StateFlow<WeatherState> = _currentWeather
+    private val _currentWeather = MutableStateFlow<WeatherState>(WeatherState.Loading)
+    val currentWeather  = _currentWeather.asStateFlow()
 
     fun getCurrentWeather(latitude: Double, longitude: Double  , units: String , lang:String) {
-        viewModelScope.launch {
-            weatherRepository.getCurrentWeather(latitude, longitude, units ,lang)
+        viewModelScope.launch (Dispatchers.IO){
+            val response = weatherRepository.getCurrentWeather(latitude,longitude,units,lang)
+            response
                 .catch {
                     _currentWeather.value = WeatherState.Failure(it)
                 }
                 .collect{
-                        data ->
-                    _currentWeather.value = WeatherState.Success(data)
+                    _currentWeather.value = WeatherState.Success(it)
                 }
         }
     }
