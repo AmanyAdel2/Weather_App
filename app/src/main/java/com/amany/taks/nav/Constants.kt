@@ -3,6 +3,7 @@ package com.amany.taks.nav
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 
@@ -17,7 +18,7 @@ object Constants {
         // Search screen
         BottomNavItem(
             label = "Search",
-            icon = Icons.Filled.Search,
+            icon = Icons.Filled.Notifications,
             route = "search"
         ),
         // Profile screen
