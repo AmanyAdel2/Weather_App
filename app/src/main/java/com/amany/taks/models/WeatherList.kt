@@ -16,3 +16,7 @@ data class WeatherList(
     var cod:Long
 ) {
 }
+data class AlarmData(
+    val id: Int,
+    var time: Long
+)
