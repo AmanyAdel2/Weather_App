@@ -1,8 +1,11 @@
 package com.amany.taks.home
 
 import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
@@ -10,15 +13,23 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.amany.taks.R
+import com.amany.taks.models.SharedPrefs
 import com.amany.taks.remote.RemoteDataSource
 import com.amany.taks.remote.RetrofitHelper
 import com.amany.taks.remote.WeatherState
 import com.amany.taks.repository.WeatherRepository
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
 
 private const val TAG = "HomeScreen"
 
@@ -29,109 +40,182 @@ fun HomeScreen() {
     )
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(true) {
         homeViewModel.getCurrentWeather(10.0, 10.0, "metric", "en")
     }
 
     val result by homeViewModel.currentWeather.collectAsState()
+    val sharedPrefs = SharedPrefs.getInstance(LocalContext.current)
+    val temperatureUnit = sharedPrefs.getTemp()
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5)) // Light gray background
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(Color(0xFF1E1E1E))
+            .padding(16.dp)
     ) {
-        Icon(
-            imageVector = Icons.Default.Home,
-            contentDescription = "Home",
-            tint = Color(0xFF0F9D58),
-            modifier = Modifier.size(64.dp)
-        )
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Top
+        ) {
+            Icon(
+                imageVector = Icons.Default.Home,
+                contentDescription = "Home",
+                tint = Color.White,
+                modifier = Modifier.size(48.dp)
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Text(
-            text = "Weather App",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.Black
-        )
+            Text(
+                text = "Weather App",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        when (val response = result) {
-            is WeatherState.Failure -> {
-                Text(text = "Failed to load weather", color = Color.Red)
-                Log.d(TAG, "Failure: ${response}")
-            }
-            WeatherState.Loading -> {
-                CircularProgressIndicator()
-                Log.d(TAG, "Loading:")
-            }
-            is WeatherState.Success -> {
-                val weather = response.weatherResponse
-                Text(
-                    text = "Temperature: ${weather.main.temp}°C\n" +
-                            "Condition: ${weather.weather.firstOrNull()?.description ?: "N/A"
-                            }",
-                    fontSize = 18.sp,
-                    color = Color.Black
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Humidity: ${weather.main.humidity}%")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Wind Speed: ${weather.wind.speed} m/s")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Pressure: ${weather.main.pressure} hPa")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "City: ${weather.name}")
-                Log.d(TAG, "Success: ${weather}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Country: ${weather.sys.country}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Sunrise: ${weather.sys.sunrise}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Sunset: ${weather.sys.sunset}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Visibility: ${weather.visibility} m")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Clouds: ${weather.clouds.all}%")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Wind Direction: ${weather.wind.deg}°")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Wind Gust: ${weather.wind.gust} m/s")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Sea Level: ${weather.main.sea_level} hPa")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Ground Level: ${weather.main.grnd_level} hPa")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Temp Min: ${weather.main.temp_min}°C")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Temp Max: ${weather.main.temp_max}°C")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Feels Like: ${weather.main.feels_like}°C")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Timezone: ${weather.timezone}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "ID: ${weather.id}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Coord: ${weather.coord.lat}, ${weather.coord.lon}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Base: ${weather.base}")
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(text = "Cod: ${weather.cod}")
-                Spacer(modifier = Modifier.height(16.dp))
-             
+            when (val response = result) {
+                is WeatherState.Failure -> {
+                    Text(text = "Failed to load weather", color = Color.Red, fontSize = 18.sp)
+                    Log.d("WeatherApp", "Failure: ${response}")
+                }
+                WeatherState.Loading -> {
+                    CircularProgressIndicator(color = Color.White)
+                }
+                is WeatherState.Success -> {
+                    val weather = response.weatherResponse
+                    val temperatureSymbol = getTemperatureSymbol(temperatureUnit)
+                    val convertedTemperature = convertTemperature(weather.main.temp, temperatureUnit)
+                    val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
 
+                    Card(
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        elevation = CardDefaults.cardElevation(6.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = painterResource(id = weatherIcon),
+                                contentDescription = "Weather Icon",
+                                modifier = Modifier.size(80.dp)
+                            )
 
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "$convertedTemperature°$temperatureSymbol",
+                                fontSize = 25.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+
+                            Text(
+                                text = weather.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercaseChar() } ?: "N/A",
+                                fontSize = 18.sp,
+                                color = Color.Gray
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Divider(color = Color.Gray, thickness = 1.dp)
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            LazyColumn {
+                                item {
+                                    WeatherDetailRow("Humidity", "${weather.main.humidity}%")
+                                    WeatherDetailRow("Wind Speed", "${weather.wind.speed} m/s")
+                                    WeatherDetailRow("Pressure", "${weather.main.pressure} hPa")
+                                    WeatherDetailRow("Visibility", "${weather.visibility} m")
+                                    WeatherDetailRow("Cloud Cover", "${weather.clouds.all}%")
+                                    WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise))
+                                    WeatherDetailRow("Sunset", formatTime(weather.sys.sunset))
+                                    WeatherDetailRow("City", weather.name)
+                                    WeatherDetailRow("Country", weather.sys.country)
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 }
 
-@Preview(showBackground = true)
+@Composable
+fun WeatherDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, color = Color.LightGray, fontSize = 16.sp)
+        Text(text = value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+// Function to get weather icon resource ID
+fun getWeatherIcon(iconCode: String?): Int {
+    return when (iconCode) {
+        "01d" -> R.drawable._01d
+        "02d" -> R.drawable._02d
+        "03d", "04d" -> R.drawable._03d
+        "09d", "10d" -> R.drawable._09n
+        "11d" -> R.drawable._11d
+        "13d" -> R.drawable._13d
+        "50d" -> R.drawable._04n
+        else -> R.drawable._02n
+    }
+}
+
+// Function to format time from Unix timestamp
+fun formatTime(timestamp: Long): String {
+    val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    return sdf.format(Date(timestamp * 1000))
+}
+
+
+ fun convertMetersPerSecToMilesPerHour(metersPerSec: Double): String {
+    val result = metersPerSec * 2.23694
+    return String.format("%.2f", result)
+}
+// Function to get API temperature units
+fun getTemperatureUnits(tempUnitPreference: String): String {
+    return when (tempUnitPreference) {
+        "Fahrenheit" -> "imperial"
+        "Celsius" -> "metric"
+        else -> ""
+    }
+}
+
+//Function to get temperature symbols
+fun getTemperatureSymbol(tempUnitPreference: String?): String {
+    return when (tempUnitPreference) {
+        "Fahrenheit" -> "F"
+        "Celsius" -> "C"
+        else -> "K"
+    }
+}
+
+// Function to convert temperature based on selected unit
+fun convertTemperature(tempInKelvin: Double, unit: String?): Double {
+    return when (unit) {
+        "Fahrenheit" -> (tempInKelvin - 273.15) * 9/5 + 32
+        "Celsius" -> tempInKelvin - 273.15
+        else -> tempInKelvin
+    }
+}
+
+//@Preview(showBackground = true)
 @Composable
 fun PreviewHomeScreen() {
     HomeScreen()
