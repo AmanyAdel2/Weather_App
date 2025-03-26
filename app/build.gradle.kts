@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.play.services.location)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -70,4 +71,8 @@ dependencies {
     val compose_version = "1.0.0"
     implementation ("androidx.compose.runtime:runtime-livedata:$compose_version")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose-android:2.8.7")
+    implementation("org.osmdroid:osmdroid-android:6.1.14") // Latest stable version
+    implementation("org.osmdroid:osmdroid-mapsforge:6.1.14")
+
+
 }

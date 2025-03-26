@@ -30,21 +30,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 private const val TAG = "HomeScreen"
 
 @Composable
 fun HomeScreen() {
+    val context = LocalContext.current
     val factory = HomeScreenViewModelFactory(
-        WeatherRepository.getInstance(RemoteDataSource(RetrofitHelper.retrofitService))
+        WeatherRepository.getInstance(RemoteDataSource(RetrofitHelper.retrofitService)),
+        context
     )
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
 
-    LaunchedEffect(true) {
-        homeViewModel.getCurrentWeather(10.0, 10.0, "metric", "en")
+    LaunchedEffect(Unit) {
+        homeViewModel.getCurrentWeather()
     }
 
     val result by homeViewModel.currentWeather.collectAsState()
+
     val sharedPrefs = SharedPrefs.getInstance(LocalContext.current)
     val temperatureUnit = sharedPrefs.getTemp()
 
@@ -79,7 +81,7 @@ fun HomeScreen() {
             when (val response = result) {
                 is WeatherState.Failure -> {
                     Text(text = "Failed to load weather", color = Color.Red, fontSize = 18.sp)
-                    Log.d("WeatherApp", "Failure: ${response}")
+                    Log.d(TAG, "Failure: $response")
                 }
                 WeatherState.Loading -> {
                     CircularProgressIndicator(color = Color.White)
@@ -131,15 +133,16 @@ fun HomeScreen() {
 
                             LazyColumn {
                                 item {
-                                    WeatherDetailRow("Humidity", "${weather.main.humidity}%")
-                                    WeatherDetailRow("Wind Speed", "${weather.wind.speed} m/s")
-                                    WeatherDetailRow("Pressure", "${weather.main.pressure} hPa")
-                                    WeatherDetailRow("Visibility", "${weather.visibility} m")
-                                    WeatherDetailRow("Cloud Cover", "${weather.clouds.all}%")
-                                    WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise))
-                                    WeatherDetailRow("Sunset", formatTime(weather.sys.sunset))
-                                    WeatherDetailRow("City", weather.name)
-                                    WeatherDetailRow("Country", weather.sys.country)
+                                    WeatherDetailRow("Humidity", weather.main.humidity?.toString() ?: "N/A")
+                                    WeatherDetailRow("Wind Speed", weather.wind.speed?.toString() ?: "N/A")
+                                    WeatherDetailRow("Pressure", weather.main.pressure?.toString() ?: "N/A")
+                                    WeatherDetailRow("Visibility", weather.visibility?.toString() ?: "N/A")
+                                    WeatherDetailRow("Cloud Cover", weather.clouds.all?.toString() ?: "N/A")
+                                    WeatherDetailRow("Sunrise", weather.sys.sunrise?.let { formatTime(it) } ?: "N/A")
+                                    WeatherDetailRow("Sunset", weather.sys.sunset?.let { formatTime(it) } ?: "N/A")
+                                    WeatherDetailRow("City", weather.name ?: "N/A")
+                                    WeatherDetailRow("Country", weather.sys.country ?: "N/A")
+
                                 }
                             }
                         }
@@ -183,11 +186,11 @@ fun formatTime(timestamp: Long): String {
     return sdf.format(Date(timestamp * 1000))
 }
 
-
- fun convertMetersPerSecToMilesPerHour(metersPerSec: Double): String {
+fun convertMetersPerSecToMilesPerHour(metersPerSec: Double): String {
     val result = metersPerSec * 2.23694
     return String.format("%.2f", result)
 }
+
 // Function to get API temperature units
 fun getTemperatureUnits(tempUnitPreference: String): String {
     return when (tempUnitPreference) {
@@ -197,7 +200,7 @@ fun getTemperatureUnits(tempUnitPreference: String): String {
     }
 }
 
-//Function to get temperature symbols
+// Function to get temperature symbols
 fun getTemperatureSymbol(tempUnitPreference: String?): String {
     return when (tempUnitPreference) {
         "Fahrenheit" -> "F"
@@ -209,7 +212,7 @@ fun getTemperatureSymbol(tempUnitPreference: String?): String {
 // Function to convert temperature based on selected unit
 fun convertTemperature(tempInKelvin: Double, unit: String?): Double {
     return when (unit) {
-        "Fahrenheit" -> (tempInKelvin - 273.15) * 9/5 + 32
+        "Fahrenheit" -> (tempInKelvin - 273.15) * 9 / 5 + 32
         "Celsius" -> tempInKelvin - 273.15
         else -> tempInKelvin
     }
