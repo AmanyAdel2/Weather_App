@@ -21,6 +21,8 @@ class SharedPrefs internal constructor(private val context: Context) {
         private const val KEY_LOCATION_MODE = "location_mode"
         private const val KEY_LATITUDE = "latitude"
         private const val KEY_LONGITUDE = "longitude"
+        const val LOCATION_GPS = "GPS"
+        const val LOCATION_MAP = "Map"
 
 
 
@@ -85,41 +87,14 @@ class SharedPrefs internal constructor(private val context: Context) {
         prefs.edit().remove(KEY_LANGUAGE).apply()
     }
 
-    // For location mode
-    fun setLocationMode(mode: String) {
-        prefs.edit().putString(KEY_LOCATION_MODE, mode).apply()
-    }
+    fun getLocationMode(): String = prefs.getString("location_mode", "GPS") ?: "GPS"
+    fun setLocationMode(mode: String) = prefs.edit().putString("location_mode", mode).apply()
 
-    fun getLocationMode(): String? {
-        return prefs.getString(KEY_LOCATION_MODE, "")
-    }
+    fun getLatitude(): Double? = prefs.getString("latitude", null)?.toDoubleOrNull()
+    fun setLatitude(lat: Double) = prefs.edit().putString("latitude", lat.toString()).apply()
 
-    fun clearLocationMode() {
-        prefs.edit().remove(KEY_LOCATION_MODE).apply()
-    }
-
-    // For latitude
-    fun setLatitude(latitude: Double) {
-        prefs.edit().putFloat(KEY_LATITUDE, latitude.toFloat()).apply()
-    }
-
-    fun getLatitude(): Double {
-        return prefs.getFloat(KEY_LATITUDE, 0.0f).toDouble()
-    }
-
-    // For longitude
-    fun setLongitude(longitude: Double) {
-        prefs.edit().putFloat(KEY_LONGITUDE, longitude.toFloat()).apply()
-    }
-
-    fun getLongitude(): Double {
-        return prefs.getFloat(KEY_LONGITUDE, 0.0f).toDouble()
-    }
-
-
-
-
-
+    fun getLongitude(): Double? = prefs.getString("longitude", null)?.toDoubleOrNull()
+    fun setLongitude(lon: Double) = prefs.edit().putString("longitude", lon.toString()).apply()
 
     fun setValue(key : String , value :String){
         prefs.edit().putString(key , value)
@@ -149,4 +124,6 @@ class SharedPrefs internal constructor(private val context: Context) {
         prefs.edit().remove(KEY_CITY).apply()
     }
 
-}
+    }
+
+
