@@ -5,6 +5,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -16,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,10 +41,24 @@ fun HomeScreen() {
         context
     )
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
+    val forecastState by homeViewModel.forecastWeather.collectAsState()
+
 
     LaunchedEffect(Unit) {
-        homeViewModel.getCurrentWeather()
+        val sharedPrefs = SharedPrefs.getInstance(context)
+        val latitude = sharedPrefs.getLatitude()
+        val longitude = sharedPrefs.getLongitude()
+        val units = sharedPrefs.getTemp() ?: "metric"
+        val lang = sharedPrefs.getLanguage() ?: "en"
+
+        if (latitude != null && longitude != null) {
+            homeViewModel.getCurrentWeather(latitude, longitude, units, lang)
+            homeViewModel.getForecastWeather(latitude, longitude, units, lang) // ✅ Add this if missing
+        } else {
+            Log.e(TAG, "Latitude or Longitude is NULL")
+        }
     }
+
 
     val result by homeViewModel.currentWeather.collectAsState()
 
@@ -94,6 +109,8 @@ fun HomeScreen() {
                     val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
                     val windSpeedUnit = sharedPrefs.getWindSpeedPreference() ?: "Meter/Sec"
                     val windSpeed = weather.wind.speed?.let { convertWindSpeed(it, windSpeedUnit) } ?: "N/A"
+                    val hourlyWeatherList = weather.list ?: emptyList()  // Ensure it is not null
+
 
 
 
@@ -148,14 +165,47 @@ fun HomeScreen() {
                                     WeatherDetailRow("City", weather.name ?: "N/A")
                                     WeatherDetailRow("Country", weather.sys.country ?: "N/A")
 
-                                }
+                                    val hourlyWeatherList = (forecastState as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
+
+                                    if (hourlyWeatherList.isNotEmpty()) {
+                                        LazyRow {
+                                            items(hourlyWeatherList) { forecast ->
+                                                HourlyForecastItem(forecast, sharedPrefs)
+                                            }
+                                        }
+                                    } else {
+                                        Log.e(TAG, "No hourly forecast available") // ✅ Debugging log
+                                        Text(text = "No forecast available", color = Color.Gray, fontSize = 16.sp) // ✅ UI fallback
+                                    }}
+
+                                }}
+                                Log.d(TAG, "Hourly Forecast Items: ${hourlyWeatherList.size}")
+
+
+
+
+
                             }
                         }
                     }
                 }
             }
+
+
+    Box {val hourlyWeatherList = (result as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
+
+        if (hourlyWeatherList.isEmpty()) {
+            Log.e("HomeScreen", "No hourly data found!") // Debugging
+        } else {
+            Log.d("HomeScreen", "Hourly Forecast List Size: ${hourlyWeatherList.size}")
         }
+
+
     }
+
+
+
+
 }
 
 @Composable
