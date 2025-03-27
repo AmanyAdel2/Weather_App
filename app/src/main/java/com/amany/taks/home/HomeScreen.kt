@@ -49,6 +49,7 @@ fun HomeScreen() {
 
     val sharedPrefs = SharedPrefs.getInstance(LocalContext.current)
     val temperatureUnit = sharedPrefs.getTemp()
+    val windSpeedUnit = sharedPrefs.getWindSpeedPreference() // "Miles/Hour" or "Meter/Sec"
 
     Box(
         modifier = Modifier
@@ -91,6 +92,10 @@ fun HomeScreen() {
                     val temperatureSymbol = getTemperatureSymbol(temperatureUnit)
                     val convertedTemperature = convertTemperature(weather.main.temp, temperatureUnit)
                     val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
+                    val windSpeedUnit = sharedPrefs.getWindSpeedPreference() ?: "Meter/Sec"
+                    val windSpeed = weather.wind.speed?.let { convertWindSpeed(it, windSpeedUnit) } ?: "N/A"
+
+
 
                     Card(
                         shape = RoundedCornerShape(16.dp),
@@ -133,11 +138,11 @@ fun HomeScreen() {
 
                             LazyColumn {
                                 item {
-                                    WeatherDetailRow("Humidity", weather.main.humidity?.toString() ?: "N/A")
-                                    WeatherDetailRow("Wind Speed", weather.wind.speed?.toString() ?: "N/A")
-                                    WeatherDetailRow("Pressure", weather.main.pressure?.toString() ?: "N/A")
-                                    WeatherDetailRow("Visibility", weather.visibility?.toString() ?: "N/A")
-                                    WeatherDetailRow("Cloud Cover", weather.clouds.all?.toString() ?: "N/A")
+                                    WeatherDetailRow("Humidity", "${weather.main.humidity?.toString() ?: "N/A"} %")
+                                    WeatherDetailRow("Wind Speed", "$windSpeed $windSpeedUnit")
+
+                                    WeatherDetailRow("Visibility", "${weather.visibility?.div(1000)?.toString() ?: "N/A"} km")
+                                    WeatherDetailRow("Cloud Cover", "${weather.clouds.all?.toString() ?: "N/A"} %")
                                     WeatherDetailRow("Sunrise", weather.sys.sunrise?.let { formatTime(it) } ?: "N/A")
                                     WeatherDetailRow("Sunset", weather.sys.sunset?.let { formatTime(it) } ?: "N/A")
                                     WeatherDetailRow("City", weather.name ?: "N/A")
@@ -217,6 +222,15 @@ fun convertTemperature(tempInKelvin: Double, unit: String?): Double {
         else -> tempInKelvin
     }
 }
+fun convertWindSpeed(speedInMetersPerSec: Double, unit: String): String {
+    return if (unit == "Miles/Hour") {
+        String.format("%.2f", speedInMetersPerSec * 2.23694) // Convert to mph
+    } else {
+        String.format("%.2f", speedInMetersPerSec) // Keep as m/s
+    }
+}
+
+
 
 //@Preview(showBackground = true)
 @Composable

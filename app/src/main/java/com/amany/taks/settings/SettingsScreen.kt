@@ -204,7 +204,7 @@ fun WindSpeedSelection(sharedPrefs: SharedPrefs) {
     var windSpeed by remember { mutableStateOf(sharedPrefs.getWindSpeedPreference()) }
 
     Column {
-        Text(text = "Wind Speed")
+        Text(text = "Wind Speed", fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
         Row(verticalAlignment = Alignment.CenterVertically) {
             listOf("Miles/Hour", "Meter/Sec").forEach { speed ->
@@ -224,6 +224,7 @@ fun WindSpeedSelection(sharedPrefs: SharedPrefs) {
         }
     }
 }
+
 fun setAppLocale(activity: Activity, languageCode: String) {
     val locale = Locale(languageCode)
     Locale.setDefault(locale)
