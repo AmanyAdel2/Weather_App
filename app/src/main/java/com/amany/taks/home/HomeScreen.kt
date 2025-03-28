@@ -8,8 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -69,30 +67,16 @@ fun HomeScreen() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .fillMaxWidth()
             .background(Color(0xFF1E1E1E))
-            .padding(16.dp)
+            .padding(0.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
-            Icon(
-                imageVector = Icons.Default.Home,
-                contentDescription = "Home",
-                tint = Color.White,
-                modifier = Modifier.size(48.dp)
-            )
 
-            Spacer(modifier = Modifier.height(16.dp))
 
-            Text(
-                text = "Weather App",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             when (val response = result) {
                 is WeatherState.Failure -> {
@@ -105,7 +89,8 @@ fun HomeScreen() {
                 is WeatherState.Success -> {
                     val weather = response.weatherResponse
                     val temperatureSymbol = getTemperatureSymbol(temperatureUnit)
-                    val convertedTemperature = convertTemperature(weather.main.temp, temperatureUnit)
+                    val convertedTemperature =
+                        temperatureUnit?.let { convertTemperature(weather.main.temp, it) }
                     val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
                     val windSpeedUnit = sharedPrefs.getWindSpeedPreference() ?: "Meter/Sec"
                     val windSpeed = weather.wind.speed?.let { convertWindSpeed(it, windSpeedUnit) } ?: "N/A"
@@ -189,19 +174,56 @@ fun HomeScreen() {
                         }
                     }
                 }
+        Box {val hourlyWeatherList = (result as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
+
+            if (hourlyWeatherList.isEmpty()) {
+                Log.e("HomeScreen", "No hourly data found!") // Debugging
+            } else {
+                Log.d("HomeScreen", "Hourly Forecast List Size: ${hourlyWeatherList.size}")
             }
 
 
-    Box {val hourlyWeatherList = (result as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
+        }
+        Spacer(modifier = Modifier.height(20.dp))
+        Box(Modifier.paddingFromBaseline(800.dp,20.dp)) {
+            when (forecastState) {
+                is WeatherState.Loading -> {
+                    CircularProgressIndicator(color = Color.White)
+                }
+                is WeatherState.Success -> {
+                    val weatherData = (forecastState as WeatherState.Success).weatherResponse
+                    Log.d(TAG, "✅ Forecast List in HomeScreen: ${weatherData.list.size}")
 
-        if (hourlyWeatherList.isEmpty()) {
-            Log.e("HomeScreen", "No hourly data found!") // Debugging
-        } else {
-            Log.d("HomeScreen", "Hourly Forecast List Size: ${hourlyWeatherList.size}")
+                    if (weatherData.list.isNotEmpty()) {
+                        FiveDayForecast(
+                            forecastList = weatherData.list,
+                            sharedPrefs = SharedPrefs.getInstance(context)
+                        )
+                    } else {
+                        Log.e(TAG, "❌ Forecast List is Empty in HomeScreen")
+                        Text(
+                            text = "No forecast data available",
+                            color = Color.Red,
+                            fontSize = 18.sp
+                        )
+                    }
+                }
+                is WeatherState.Failure -> {
+                    Text(
+                        text = "Failed to load forecast",
+                        color = Color.Red,
+                        fontSize = 18.sp
+                    )
+                }
+            }
+
         }
 
 
+
     }
+
+
 
 
 
