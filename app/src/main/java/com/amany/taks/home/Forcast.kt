@@ -43,7 +43,7 @@ fun HourlyForecastList(hourlyWeatherList: List<HourlyForecast>, sharedPrefs: Sha
 @Composable
 fun HourlyForecastItem(weather: HourlyForecast, sharedPrefs: SharedPrefs) {
     val time = weather.dt_txt?.substring(11, 16) ?: "N/A"
-    val temperature = weather.main.temp.roundToInt()
+    val convertedTemperature = convertTemperature(weather.main.temp, sharedPrefs.getTemp() ?: "metric")
     val temperatureSymbol = getTemperatureSymbol(sharedPrefs.getTemp() ?: "metric")
     val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
 
@@ -65,7 +65,7 @@ fun HourlyForecastItem(weather: HourlyForecast, sharedPrefs: SharedPrefs) {
                 contentDescription = "Weather Icon",
                 modifier = Modifier.size(50.dp)
             )
-            Text(text = "$temperature $temperatureSymbol", fontSize = 14.sp)
+            Text(text = "${convertedTemperature}°$temperatureSymbol", fontSize = 14.sp)
         }
     }
 }
