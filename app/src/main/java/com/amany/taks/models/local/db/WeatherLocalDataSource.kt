@@ -12,8 +12,8 @@ interface WeatherLocalDataSource {
     suspend fun removeFromFav(favoriteCity: FavoriteCity)
 
     //For stored weather
-    fun getAllStoredWeather(): Flow<WeatherResponse>
-    suspend fun addCurrentWeather(weatherResponse: WeatherResponse)
+    fun getAllStoredWeather(): Flow<WeatherDbRes>
+    suspend fun addCurrentWeather(weatherResponse: WeatherDbRes)
     suspend fun removeAllWeather()
 
 }

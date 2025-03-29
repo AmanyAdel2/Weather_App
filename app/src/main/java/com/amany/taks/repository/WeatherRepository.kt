@@ -3,6 +3,7 @@ package com.amany.taks.repository
 import android.util.Log
 import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.WeatherList
+import com.amany.taks.models.local.db.WeatherDbRes
 import com.amany.taks.models.local.db.WeatherLocalDataSource
 import com.amany.taks.models.remote.RemoteDataSource
 import com.amany.taks.models.remote.WeatherResponse
@@ -41,6 +42,7 @@ class WeatherRepository private constructor(
         return localSource.getFavCities()
     }
 
+
     suspend fun insertToFav(favoriteCity: FavoriteCity) {
         localSource.addToFav(favoriteCity)
     }
@@ -51,11 +53,11 @@ class WeatherRepository private constructor(
 
 
 
-    fun getAllCurrentWeatherFromRoom(): Flow<WeatherResponse> {
+    fun getAllCurrentWeatherFromRoom(): Flow<WeatherDbRes> {
         return localSource.getAllStoredWeather()
     }
 
-    suspend fun insertCurrentWeather(weatherResponse: WeatherResponse) {
+    suspend fun insertCurrentWeather(weatherResponse: WeatherDbRes) {
         localSource.addCurrentWeather(weatherResponse)
     }
    suspend fun deleteStoredCurrentWeather() {

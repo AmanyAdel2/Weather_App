@@ -33,15 +33,27 @@ class WeatherLocalDataSourceImpl(context: Context) : WeatherLocalDataSource{
 
 
 
-    override fun getAllStoredWeather(): Flow<WeatherResponse> {
+    override fun getAllStoredWeather(): Flow<WeatherDbRes> {
         return currentWeatherDAO.getStoredWeather()
     }
 
-    override suspend fun addCurrentWeather(weatherResponse: WeatherResponse) {
+    override suspend fun addCurrentWeather(weatherResponse: WeatherDbRes) {
         currentWeatherDAO.insertAllCurrentWeather(weatherResponse)
     }
 
     override suspend fun removeAllWeather() {
         currentWeatherDAO.deleteAllWeather()
+    }
+    companion object {
+        @Volatile
+        private var INSTANCE: WeatherLocalDataSource? = null
+
+        fun getInstance(context: Context): WeatherLocalDataSource {
+            return INSTANCE ?: synchronized(this) {
+                val instance = WeatherLocalDataSourceImpl(context)
+                INSTANCE = instance
+                instance
+            }
+        }
     }
 }
