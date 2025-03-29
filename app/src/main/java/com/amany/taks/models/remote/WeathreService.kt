@@ -1,4 +1,4 @@
-package com.amany.taks.remote
+package com.amany.taks.models.remote
 
 import com.amany.taks.models.WeatherList
 import retrofit2.Response

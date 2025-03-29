@@ -1,4 +1,4 @@
-package com.amany.taks.remote
+package com.amany.taks.models.remote
 
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

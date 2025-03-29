@@ -1,11 +1,8 @@
-package com.amany.taks.remote
+package com.amany.taks.models.remote
 
-import android.content.ContentValues.TAG
-import android.util.Log
 import com.amany.taks.models.WeatherList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import retrofit2.Response
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import retrofit2.HttpException
