@@ -1,18 +1,19 @@
 package com.amany.taks.repository
 
 import android.util.Log
+import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.WeatherList
-import com.amany.taks.remote.RemoteDataSource
-import com.amany.taks.remote.WeatherResponse
+import com.amany.taks.models.local.db.WeatherLocalDataSource
+import com.amany.taks.models.remote.RemoteDataSource
+import com.amany.taks.models.remote.WeatherResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import retrofit2.HttpException
-import java.io.IOException
 
 class WeatherRepository private constructor(
-    private val remoteDataSource: RemoteDataSource
+    private val remoteDataSource: RemoteDataSource, private val localSource: WeatherLocalDataSource
 ) {
     suspend fun getCurrentWeather(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherList> {
         return remoteDataSource.getCurrentWeatherOverNetwork(lat,lon,units,lang)
@@ -36,6 +37,30 @@ class WeatherRepository private constructor(
             }
         }.flowOn(Dispatchers.IO)
     }
+    suspend fun getFavCitiesFromRoom(): Flow<List<FavoriteCity>> {
+        return localSource.getFavCities()
+    }
+
+    suspend fun insertToFav(favoriteCity: FavoriteCity) {
+        localSource.addToFav(favoriteCity)
+    }
+
+     suspend fun deleteFromFav(favoriteCity: FavoriteCity) {
+        localSource.removeFromFav(favoriteCity)
+    }
+
+
+
+    fun getAllCurrentWeatherFromRoom(): Flow<WeatherResponse> {
+        return localSource.getAllStoredWeather()
+    }
+
+    suspend fun insertCurrentWeather(weatherResponse: WeatherResponse) {
+        localSource.addCurrentWeather(weatherResponse)
+    }
+   suspend fun deleteStoredCurrentWeather() {
+        localSource.removeAllWeather()
+    }
 
 
 
@@ -45,10 +70,11 @@ class WeatherRepository private constructor(
     companion object {
         private var INSTANCE: WeatherRepository? = null
         fun getInstance(
-            currentWeatherRemoteRepository: RemoteDataSource
+            currentWeatherRemoteRepository: RemoteDataSource,
+            CurrentWeatherLocalRepository: WeatherLocalDataSource
         ): WeatherRepository {
             return INSTANCE ?: synchronized(this) {
-                val temp = WeatherRepository(currentWeatherRemoteRepository)
+                val temp = WeatherRepository(currentWeatherRemoteRepository, CurrentWeatherLocalRepository)
                 INSTANCE = temp
                 temp
             }
