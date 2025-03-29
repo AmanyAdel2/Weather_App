@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,20 +18,7 @@ import androidx.compose.ui.graphics.Color
 
 @Composable
 fun FavoriteScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Icon on the screen
-        Icon(
-            imageVector = Icons.Default.Favorite,
-            contentDescription = "favorite",
-            tint = Color(0xFF0F9D58)
-        )
-        // Text on the screen
-        Text(text = "Favorite", color = Color.Black)
-    }
+   FloatingActionButton(onClick = { }) {
+        Icon(imageVector = Icons.Default.LocationOn, contentDescription = "Location")
+   }
 }
