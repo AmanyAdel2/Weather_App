@@ -21,9 +21,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amany.taks.R
 import com.amany.taks.models.SharedPrefs
-import com.amany.taks.remote.RemoteDataSource
-import com.amany.taks.remote.RetrofitHelper
-import com.amany.taks.remote.WeatherState
+import com.amany.taks.models.local.db.WeatherLocalDataSourceImpl
+import com.amany.taks.models.remote.RemoteDataSource
+import com.amany.taks.models.remote.RetrofitHelper
+import com.amany.taks.models.remote.WeatherState
 import com.amany.taks.repository.WeatherRepository
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,7 +36,7 @@ private const val TAG = "HomeScreen"
 fun HomeScreen() {
     val context = LocalContext.current
     val factory = HomeScreenViewModelFactory(
-        WeatherRepository.getInstance(RemoteDataSource(RetrofitHelper.retrofitService)),
+        WeatherRepository.getInstance(RemoteDataSource(RetrofitHelper.retrofitService), WeatherLocalDataSourceImpl(context)),
         context
     )
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
@@ -51,7 +52,7 @@ fun HomeScreen() {
 
         if (latitude != null && longitude != null) {
             homeViewModel.getCurrentWeather(latitude, longitude, units, lang)
-            homeViewModel.getForecastWeather(latitude, longitude, units, lang) // ✅ Add this if missing
+            homeViewModel.getForecastWeather(latitude, longitude, units, lang)
         } else {
             Log.e(TAG, "Latitude or Longitude is NULL")
         }
@@ -62,7 +63,7 @@ fun HomeScreen() {
 
     val sharedPrefs = SharedPrefs.getInstance(LocalContext.current)
     val temperatureUnit = sharedPrefs.getTemp()
-    val windSpeedUnit = sharedPrefs.getWindSpeedPreference() // "Miles/Hour" or "Meter/Sec"
+    val windSpeedUnit = sharedPrefs.getWindSpeedPreference()
 
     Box(
         modifier = Modifier
@@ -159,8 +160,8 @@ fun HomeScreen() {
                                             }
                                         }
                                     } else {
-                                        Log.e(TAG, "No hourly forecast available") // ✅ Debugging log
-                                        Text(text = "No forecast available", color = Color.Gray, fontSize = 16.sp) // ✅ UI fallback
+                                        Log.e(TAG, "No hourly forecast available")
+                                        Text(text = "No forecast available", color = Color.Gray, fontSize = 16.sp)
                                     }}
 
                                 }}
