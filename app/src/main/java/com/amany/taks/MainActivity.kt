@@ -16,7 +16,12 @@ import androidx.navigation.compose.rememberNavController
 import com.amany.taks.alarm.AlarmAppScreen
 import com.amany.taks.fav.FavoriteScreen
 import com.amany.taks.home.HomeScreen
+import com.amany.taks.models.local.db.WeatherLocalDataSourceImpl
+import com.amany.taks.models.remote.RemoteDataSource
+import com.amany.taks.models.remote.RetrofitHelper.retrofit
+import com.amany.taks.models.remote.WeathreService
 import com.amany.taks.nav.Constants
+import com.amany.taks.repository.WeatherRepository
 import com.amany.taks.settings.SettingsScreen
 import com.amany.taks.ui.theme.TAKSTheme
 
@@ -24,6 +29,10 @@ import com.amany.taks.ui.theme.TAKSTheme
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val localDataSource = WeatherLocalDataSourceImpl.getInstance(this)
+        val remoteDataSource = RemoteDataSource.getInstance(retrofit.create(WeathreService::class.java))
+        val weatherRepository = WeatherRepository.getInstance(remoteDataSource, localDataSource)
+
         enableEdgeToEdge()
         setContent {
             TAKSTheme (dynamicColor = false, darkTheme = false) {
@@ -36,7 +45,7 @@ class MainActivity : ComponentActivity() {
                             BottomNavigationBar(navController = navController)
                         }, content = { padding ->
                             // Nav host: where screens are placed
-                            NavHostContainer(navController = navController, padding = padding)
+                            NavHostContainer(navController = navController, padding = padding,weatherRepository)
                         }
                     )
                 }
@@ -48,11 +57,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun NavHostContainer(
     navController: NavHostController,
-    padding: PaddingValues
+    padding: PaddingValues,
+    weatherRepository: WeatherRepository
 ) {
 
     NavHost(
         navController = navController,
+
 
 
         startDestination = "home",
@@ -76,7 +87,7 @@ fun NavHostContainer(
                 SettingsScreen()
             }
             composable("favorite") {
-                FavoriteScreen()
+                FavoriteScreen(weatherRepository)
             }
         })
 }

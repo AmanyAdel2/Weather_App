@@ -8,10 +8,9 @@ import androidx.room.TypeConverters
 import com.amany.taks.models.CityConverter
 import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.WeatherListConverter
-import com.amany.taks.models.remote.WeatherResponse
 
 
-@Database(entities = [FavoriteCity::class , WeatherResponse::class], version = 3 )
+@Database(entities = [FavoriteCity::class , WeatherDbRes::class], version = 3 )
 @TypeConverters(WeatherListConverter::class, CityConverter::class)
 abstract class WeatherDatabase : RoomDatabase(){
     abstract fun getFavoriteCityDao(): FavoriteDAO

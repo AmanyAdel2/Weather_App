@@ -28,6 +28,18 @@ class RemoteDataSource(val weathreService: WeathreService) {
             }
         }.flowOn(Dispatchers.IO)
     }
+    companion object {
+        @Volatile
+        private var INSTANCE: RemoteDataSource? = null
+
+        fun getInstance(weathreService: WeathreService): RemoteDataSource {
+            return INSTANCE ?: synchronized(this) {
+                val instance = RemoteDataSource(weathreService)
+                INSTANCE = instance
+                instance
+            }
+        }
+    }
 
 
 
