@@ -15,38 +15,41 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 
 
-class FavoriteCityViewModel (private val weatherRepository: WeatherRepository) : ViewModel(){
-    private val _cities: MutableStateFlow<LocalState> = MutableStateFlow<LocalState>(LocalState.Loading)
-    val cities : StateFlow<LocalState> = _cities
+class FavoriteCityViewModel(private val weatherRepository: WeatherRepository) : ViewModel() {
+    private val _cities = MutableStateFlow<LocalState>(LocalState.Loading)
+    val cities: StateFlow<LocalState> = _cities
 
-    private val TAG = "FavoriteCityViewModel"
+    init {
+        getFavouriteCitiesFromRoom() // Fetch cities when ViewModel is created
+    }
 
-    fun getFavouriteCitiesFromRoom(){
-        viewModelScope.launch{
+    fun getFavouriteCitiesFromRoom() {
+        viewModelScope.launch {
             weatherRepository.getFavCitiesFromRoom()
-                .catch {
-                    _cities.value = LocalState.Failure(it)
+                .catch { exception ->
+                    _cities.value = LocalState.Failure(exception)
                 }
-                .collect{
-                        data -> _cities.value = LocalState.Success(data)
+                .collect { data ->
+                    _cities.value = LocalState.Success(data)
                 }
-            Log.i(TAG, "getFavouriteCitiesFromRoom: ")
         }
     }
 
-    fun insertCityToFavorite(favoriteCity : FavoriteCity){
+    fun insertCityToFavorite(favoriteCity: FavoriteCity) {
         viewModelScope.launch(Dispatchers.IO) {
             weatherRepository.insertToFav(favoriteCity)
-            getFavouriteCitiesFromRoom()
+            getFavouriteCitiesFromRoom() // Refresh the list after inserting
         }
     }
-    fun removeCityFromFavorite(favoriteCity : FavoriteCity){
+
+    fun removeCityFromFavorite(favoriteCity: FavoriteCity) {
         viewModelScope.launch(Dispatchers.IO) {
             weatherRepository.deleteFromFav(favoriteCity)
-            getFavouriteCitiesFromRoom()
+            getFavouriteCitiesFromRoom() // Refresh after deletion
         }
     }
 }
+
 class FavoriteCityViewModelFactory(private val _repo: WeatherRepository): ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return if(modelClass.isAssignableFrom(FavoriteCityViewModel::class.java)){
