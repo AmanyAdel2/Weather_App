@@ -72,6 +72,13 @@ class SharedPrefs internal constructor(private val context: Context) {
     fun clearLanguage() {
         prefs.edit().remove(KEY_LANGUAGE).apply()
     }
+    fun setLocation(lat: Double, lon: Double) {
+        prefs.edit()
+            .putString(KEY_LATITUDE, lat.toString())
+            .putString(KEY_LONGITUDE, lon.toString())
+            .apply()
+    }
+
 
 
     //For Temperature
@@ -124,6 +131,6 @@ class SharedPrefs internal constructor(private val context: Context) {
         prefs.edit().remove(KEY_CITY).apply()
     }
 
-    }
+}
 
 

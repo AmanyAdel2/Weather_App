@@ -1,9 +1,14 @@
 package com.amany.taks.settings
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Looper
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,148 +41,121 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.amany.taks.map.OpenStreetMapActivity
 import com.amany.taks.models.SharedPrefs
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import java.util.Locale
 
 
-//class SharedPrefs private constructor(context: Context) {
-//
-//    private val sharedPreferences: SharedPreferences =
-//        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-//
-//    private val _windSpeedFlow = MutableStateFlow(getWindSpeedPreference())
-//    val windSpeedFlow: Flow<String> get() = _windSpeedFlow
-//
-//    companion object {
-//        private const val PREFS_NAME = "WeatherPrefs"
-//        private const val KEY_WIND_SPEED = "wind_speed"
-//        private const val KEY_TEMPERATURE = "temperature"
-//        private const val KEY_LANGUAGE = "language"
-//        private const val KEY_LOCATION_MODE = "location_mode"
-//
-//        @Volatile
-//        private var instance: SharedPrefs? = null
-//
-//        fun getInstance(context: Context): SharedPrefs {
-//            return instance ?: synchronized(this) {
-//                instance ?: SharedPrefs(context.applicationContext).also { instance = it }
-//            }
-//        }
-//    }
-//
-//    fun getWindSpeedPreference(): String {
-//        return sharedPreferences.getString(KEY_WIND_SPEED, "Meter/Sec") ?: "Meter/Sec"
-//    }
-//
-//    fun setWindSpeedPreference(value: String) {
-//        sharedPreferences.edit().putString(KEY_WIND_SPEED, value).apply()
-//        _windSpeedFlow.value = value
-//    }
-//
-//    fun getTemp(): String {
-//        return sharedPreferences.getString(KEY_TEMPERATURE, "Celsius") ?: "Celsius"
-//    }
-//
-//    fun setTemp(value: String) {
-//        sharedPreferences.edit().putString(KEY_TEMPERATURE, value).apply()
-//    }
-//
-//    fun getLanguage(): String {
-//        return sharedPreferences.getString(KEY_LANGUAGE, "en") ?: "en"
-//    }
-//
-//    fun setLanguage(value: String) {
-//        sharedPreferences.edit().putString(KEY_LANGUAGE, value).apply()
-//    }
-//
-//    fun getLocationMode(): String {
-//        return sharedPreferences.getString(KEY_LOCATION_MODE, "GPS") ?: "GPS"
-//    }
-//
-//    fun setLocationMode(value: String) {
-//        sharedPreferences.edit().putString(KEY_LOCATION_MODE, value).apply()
-//    }
-//}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 @Composable
 fun SettingsScreen() {
     val context = LocalContext.current
     val sharedPrefs = remember { SharedPrefs.getInstance(context) }
-    val scope = rememberCoroutineScope()
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
     var selectedMode by remember { mutableStateOf(sharedPrefs.getLocationMode()) }
+    var latitude by remember { mutableStateOf<Double?>(null) }
+    var longitude by remember { mutableStateOf<Double?>(null) }
+    var hasPermission by remember { mutableStateOf(false) }
+    var windSpeed by remember { mutableStateOf(sharedPrefs.getWindSpeedPreference()) }
+    var selectedTemperature by remember { mutableStateOf(sharedPrefs.getTemp()) }
 
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPermission = isGranted
+    }
 
-    var windSpeed by remember { mutableStateOf("") }
-    var temperature by remember { mutableStateOf("") }
-    var language by remember { mutableStateOf("") }
-    var location by remember { mutableStateOf("") }
-
-    // Collect wind speed updates in real-time
     LaunchedEffect(Unit) {
-        windSpeed = sharedPrefs.getWindSpeedPreference().toString()
-        temperature = sharedPrefs.getTemp().toString()
-        language = sharedPrefs.getLanguage().toString()
-        location = sharedPrefs.getLocationMode().toString()
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    LaunchedEffect(hasPermission, selectedMode) {
+        if (hasPermission && selectedMode == "GPS") {
+            requestLocationUpdates(fusedLocationClient) { lat, lon ->
+                latitude = lat
+                longitude = lon
+                if (lat != null && lon != null) {
+                    sharedPrefs.setLocation(lat, lon)
+                    // Toast.makeText(context, "Location: $lat, $lon", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     Column(modifier = Modifier.padding(16.dp)) {
-        Text(text = "Settings")
+        Text(text = "Settings", fontWeight = FontWeight.Bold, fontSize = 22.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Wind Speed Settings
-      WindSpeedSelection(sharedPrefs)
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Temperature Settings
-//
-        TemperatureSelectionScreen(sharedPrefs)
-
-        // Language Settings
-        Text(text = "Language")
+        // Location Mode Selection
+        Text(text = "Choose Location Mode", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Row {
-            listOf("ar" to "Arabic", "en" to "English").forEach { (code, label) ->
-                RadioButton(selected = language == code, onClick = {
-                    language = code
-                    sharedPrefs.setLanguage(code)
-                    Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
-                })
-                Text(text = label)
-                Spacer(modifier = Modifier.width(8.dp))
+            RadioButton(
+                selected = selectedMode == "GPS",
+                onClick = {
+                    selectedMode = "GPS"
+                    sharedPrefs.setLocationMode("GPS")
+                    Toast.makeText(context, "GPS selected", Toast.LENGTH_SHORT).show()
+                }
+            )
+            Text(text = "Use GPS", modifier = Modifier.padding(start = 8.dp))
+        }
+        Row {
+            RadioButton(
+                selected = selectedMode == "Map",
+                onClick = {
+                    selectedMode = "Map"
+                    sharedPrefs.setLocationMode("Map")
+                    context.startActivity(Intent(context, OpenStreetMapActivity::class.java))
+                }
+            )
+            Text(text = "Select Location from Map", modifier = Modifier.padding(start = 8.dp))
+        }
+
+        // Wind Speed Selection
+        Text(text = "Wind Speed Unit", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row {
+            listOf("Miles/Hour", "Meter/Sec").forEach { speed ->
+                Row {
+                    RadioButton(
+                        selected = windSpeed == speed,
+                        onClick = {
+                            windSpeed = speed
+                            sharedPrefs.setWindSpeedPreference(speed)
+                            Toast.makeText(context, "$speed selected", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    Text(text = speed, modifier = Modifier.padding(start = 8.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
             }
         }
-        Spacer(modifier = Modifier.height(16.dp))
 
-        // Location Settings
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = "Choose Location Mode", style = MaterialTheme.typography.titleLarge)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row {
-                RadioButton(
-                    selected = selectedMode == "GPS",
-                    onClick = {
-                        selectedMode = "GPS"
-                        sharedPrefs.setLocationMode("GPS")
-                        Toast.makeText(context, "GPS selected", Toast.LENGTH_SHORT).show()
-                    }
-                )
-                Text(text = "Use GPS", modifier = Modifier.padding(start = 8.dp))
+        // Temperature Selection
+        Text(text = "Temperature Unit", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Row {
+            listOf("Kelvin", "Celsius", "Fahrenheit").forEach { temp ->
+                Row {
+                    RadioButton(
+                        selected = selectedTemperature == temp,
+                        onClick = {
+                            selectedTemperature = temp
+                            sharedPrefs.setTemp(temp)
+                            Toast.makeText(context, "$temp selected", Toast.LENGTH_SHORT).show()
+                        }
+                    )
+                    Text(text = temp, modifier = Modifier.padding(start = 8.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
             }
-
-            Row {
-                RadioButton(
-                    selected = selectedMode == "Map",
-                    onClick = {
-                        selectedMode = "Map"
-                        sharedPrefs.setLocationMode("Map")
-                        context.startActivity(Intent(context, OpenStreetMapActivity::class.java))
-                    }
-                )
-                Text(text = "Select Location from Map", modifier = Modifier.padding(start = 8.dp))
-            }
-        }}
+        }
+    }
 }
 @Composable
 fun SettingsScreenn() {
@@ -328,7 +306,7 @@ fun LocationSelectionScreen(onMapSelected: () -> Unit) {
                     onClick = {
                         location = mode
                         sharedPrefs.setLocationMode(mode)
-                        Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
+                        //  Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
 
                         if (mode == SharedPrefs.LOCATION_MAP) {
                             onMapSelected()
@@ -341,3 +319,29 @@ fun LocationSelectionScreen(onMapSelected: () -> Unit) {
         }
     }
 }
+@SuppressLint("MissingPermission")
+fun requestLocationUpdates(
+    fusedLocationProviderClient: FusedLocationProviderClient,
+    onLocationReceived: (Double?, Double?) -> Unit
+) {
+    val locationRequest = LocationRequest.create().apply {
+        priority = Priority.PRIORITY_HIGH_ACCURACY
+        interval = 5000  // Update every 5 seconds
+        fastestInterval = 2000  // Fastest possible update interval
+    }
+
+    val locationCallback = object : LocationCallback() {
+        override fun onLocationResult(locationResult: LocationResult) {
+            locationResult.lastLocation?.let { location ->
+                onLocationReceived(location.latitude, location.longitude)
+            }
+        }
+    }
+
+    fusedLocationProviderClient.requestLocationUpdates(
+        locationRequest,
+        locationCallback,
+        Looper.getMainLooper()
+    )
+}
+
