@@ -1,15 +1,36 @@
 package com.amany.taks.home
 
+
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -30,8 +51,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-private const val TAG = "HomeScreen"
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
@@ -41,7 +62,7 @@ fun HomeScreen() {
     )
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
     val forecastState by homeViewModel.forecastWeather.collectAsState()
-
+    val currentTime = remember { mutableStateOf(getFormattedDateTime()) }
 
     LaunchedEffect(Unit) {
         val sharedPrefs = SharedPrefs.getInstance(context)
@@ -54,59 +75,53 @@ fun HomeScreen() {
             homeViewModel.getCurrentWeather(latitude, longitude, units, lang)
             homeViewModel.getForecastWeather(latitude, longitude, units, lang)
         } else {
-            Log.e(TAG, "Latitude or Longitude is NULL")
+            Log.e("HomeScreen", "Latitude or Longitude is NULL")
+        }
+        while (true) {
+            currentTime.value = getFormattedDateTime()
+            kotlinx.coroutines.delay(1000)
         }
     }
 
-
     val result by homeViewModel.currentWeather.collectAsState()
-
-    val sharedPrefs = SharedPrefs.getInstance(LocalContext.current)
+    val sharedPrefs = SharedPrefs.getInstance(context)
     val temperatureUnit = sharedPrefs.getTemp()
-    val windSpeedUnit = sharedPrefs.getWindSpeedPreference()
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .fillMaxWidth()
-            .background(Color(0xFF1E1E1E))
-            .padding(0.dp)
+            .background(Color(0xFF121212)),
+        contentAlignment = Alignment.TopCenter
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-
+            Text(
+                text = currentTime.value,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
 
             when (val response = result) {
                 is WeatherState.Failure -> {
-                    Text(text = "Failed to load weather", color = Color.Red, fontSize = 18.sp)
-                    Log.d(TAG, "Failure: $response")
+                    Text("Failed to load weather", color = Color.Red, fontSize = 18.sp)
                 }
                 WeatherState.Loading -> {
                     CircularProgressIndicator(color = Color.White)
                 }
                 is WeatherState.Success -> {
                     val weather = response.weatherResponse
-                    val temperatureSymbol = getTemperatureSymbol(temperatureUnit)
-                    val convertedTemperature =
-                        temperatureUnit?.let { convertTemperature(weather.main.temp, it) }
+                    val convertedTemperature = temperatureUnit?.let { convertTemperature(weather.main.temp, it) }
                     val weatherIcon = getWeatherIcon(weather.weather.firstOrNull()?.icon)
-                    val windSpeedUnit = sharedPrefs.getWindSpeedPreference() ?: "Meter/Sec"
-                    val windSpeed = weather.wind.speed?.let { convertWindSpeed(it, windSpeedUnit) } ?: "N/A"
-                    val hourlyWeatherList = weather.list ?: emptyList()  // Ensure it is not null
 
-
-
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Card(
                         shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        elevation = CardDefaults.cardElevation(6.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+                        modifier = Modifier.padding(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
@@ -117,119 +132,56 @@ fun HomeScreen() {
                                 contentDescription = "Weather Icon",
                                 modifier = Modifier.size(80.dp)
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
                             Text(
-                                text = "$convertedTemperature°$temperatureSymbol",
-                                fontSize = 25.sp,
+                                text = "$convertedTemperature ${getTemperatureSymbol(temperatureUnit)}",
+                                fontSize = 32.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-
                             Text(
                                 text = weather.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercaseChar() } ?: "N/A",
                                 fontSize = 18.sp,
                                 color = Color.Gray
                             )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Divider(color = Color.Gray, thickness = 1.dp)
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            LazyColumn {
-                                item {
-                                    WeatherDetailRow("Humidity", "${weather.main.humidity?.toString() ?: "N/A"} %")
-                                    WeatherDetailRow("Wind Speed", "$windSpeed $windSpeedUnit")
-
-                                    WeatherDetailRow("Visibility", "${weather.visibility?.div(1000)?.toString() ?: "N/A"} km")
-                                    WeatherDetailRow("Cloud Cover", "${weather.clouds.all?.toString() ?: "N/A"} %")
-                                    WeatherDetailRow("Sunrise", weather.sys.sunrise?.let { formatTime(it) } ?: "N/A")
-                                    WeatherDetailRow("Sunset", weather.sys.sunset?.let { formatTime(it) } ?: "N/A")
-                                    WeatherDetailRow("City", weather.name ?: "N/A")
-                                    WeatherDetailRow("Country", weather.sys.country ?: "N/A")
-
-                                    val hourlyWeatherList = (forecastState as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
-
-                                    if (hourlyWeatherList.isNotEmpty()) {
-                                        LazyRow {
-                                            items(hourlyWeatherList) { forecast ->
-                                                HourlyForecastItem(forecast, sharedPrefs)
-                                            }
-                                        }
-                                    } else {
-                                        Log.e(TAG, "No hourly forecast available")
-                                        Text(text = "No forecast available", color = Color.Gray, fontSize = 16.sp)
-                                    }}
-
-                                }}
-                                Log.d(TAG, "Hourly Forecast Items: ${hourlyWeatherList.size}")
+                            Card { WeatherDetailRow("Humidity", "${weather.main.humidity}%")
+                                WeatherDetailRow("Wind Speed", "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}")
+                                WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise)) }
 
 
 
+                        }
+                    }
 
 
-                            }
+                    Text("Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    LazyRow {
+                        items(forecastState.let { (it as? WeatherState.Success)?.weatherResponse?.list ?: emptyList() }) { forecast ->
+                            HourlyForecastItem(forecast, sharedPrefs)
+                        }
+                    }
+
+                    when (forecastState) {
+                        is WeatherState.Success -> {
+                            val weatherData = (forecastState as WeatherState.Success).weatherResponse
+                            Text("5 Days Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Card { FiveDayForecast(weatherData.list, SharedPrefs.getInstance(context)) }
+
+
+                        }
+                        is WeatherState.Failure -> {
+                            Text(text = "Failed to load forecast", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
+                        }
+                        WeatherState.Loading -> {
+                            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
-        Box {val hourlyWeatherList = (result as? WeatherState.Success)?.weatherResponse?.list ?: emptyList()
-
-            if (hourlyWeatherList.isEmpty()) {
-                Log.e("HomeScreen", "No hourly data found!") // Debugging
-            } else {
-                Log.d("HomeScreen", "Hourly Forecast List Size: ${hourlyWeatherList.size}")
             }
-
-
         }
-        Spacer(modifier = Modifier.height(20.dp))
-        Box(Modifier.paddingFromBaseline(800.dp,20.dp)) {
-            when (forecastState) {
-                is WeatherState.Loading -> {
-                    CircularProgressIndicator(color = Color.White)
-                }
-                is WeatherState.Success -> {
-                    val weatherData = (forecastState as WeatherState.Success).weatherResponse
-                    Log.d(TAG, "✅ Forecast List in HomeScreen: ${weatherData.list.size}")
-
-                    if (weatherData.list.isNotEmpty()) {
-                        FiveDayForecast(
-                            forecastList = weatherData.list,
-                            sharedPrefs = SharedPrefs.getInstance(context)
-                        )
-                    } else {
-                        Log.e(TAG, "❌ Forecast List is Empty in HomeScreen")
-                        Text(
-                            text = "No forecast data available",
-                            color = Color.Red,
-                            fontSize = 18.sp
-                        )
-                    }
-                }
-                is WeatherState.Failure -> {
-                    Text(
-                        text = "Failed to load forecast",
-                        color = Color.Red,
-                        fontSize = 18.sp
-                    )
-                }
-            }
-
-        }
-
-
-
     }
-
-
-
-
-
-
 }
+
+
 
 @Composable
 fun WeatherDetailRow(label: String, value: String) {
@@ -239,12 +191,11 @@ fun WeatherDetailRow(label: String, value: String) {
             .padding(vertical = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, color = Color.LightGray, fontSize = 16.sp)
-        Text(text = value, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        Text(text = label, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f), fontSize = 16.sp)
+        Text(text = value, color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp, fontWeight = FontWeight.Bold)
     }
 }
 
-// Function to get weather icon resource ID
 fun getWeatherIcon(iconCode: String?): Int {
     return when (iconCode) {
         "01d" -> R.drawable._01d
@@ -258,7 +209,6 @@ fun getWeatherIcon(iconCode: String?): Int {
     }
 }
 
-// Function to format time from Unix timestamp
 fun formatTime(timestamp: Long): String {
     val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
     return sdf.format(Date(timestamp * 1000))
@@ -269,7 +219,6 @@ fun convertMetersPerSecToMilesPerHour(metersPerSec: Double): String {
     return String.format("%.2f", result)
 }
 
-// Function to get API temperature units
 fun getTemperatureUnits(tempUnitPreference: String): String {
     return when (tempUnitPreference) {
         "Fahrenheit" -> "imperial"
@@ -278,7 +227,6 @@ fun getTemperatureUnits(tempUnitPreference: String): String {
     }
 }
 
-// Function to get temperature symbols
 fun getTemperatureSymbol(tempUnitPreference: String?): String {
     return when (tempUnitPreference) {
         "Fahrenheit" -> "F"
@@ -287,7 +235,6 @@ fun getTemperatureSymbol(tempUnitPreference: String?): String {
     }
 }
 
-// Function to convert temperature based on selected unit
 fun convertTemperature(tempInKelvin: Double, unit: String?): Double {
     return when (unit) {
         "Fahrenheit" -> (tempInKelvin - 273.15) * 9 / 5 + 32
@@ -295,17 +242,21 @@ fun convertTemperature(tempInKelvin: Double, unit: String?): Double {
         else -> tempInKelvin
     }
 }
+
 fun convertWindSpeed(speedInMetersPerSec: Double, unit: String): String {
     return if (unit == "Miles/Hour") {
-        String.format("%.2f", speedInMetersPerSec * 2.23694) // Convert to mph
+        String.format("%.2f", speedInMetersPerSec * 2.23694)
     } else {
-        String.format("%.2f", speedInMetersPerSec) // Keep as m/s
+        String.format("%.2f", speedInMetersPerSec)
     }
 }
 
+fun getFormattedDateTime(): String {
+    val sdf = SimpleDateFormat("EEEE, MMM d, yyyy | hh:mm a", Locale.getDefault())
+    return sdf.format(Date())
+}
 
-
-//@Preview(showBackground = true)
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun PreviewHomeScreen() {
     HomeScreen()

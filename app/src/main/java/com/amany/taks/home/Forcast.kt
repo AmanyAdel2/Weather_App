@@ -69,4 +69,3 @@ fun HourlyForecastItem(weather: HourlyForecast, sharedPrefs: SharedPrefs) {
         }
     }
 }
-
