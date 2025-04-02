@@ -13,7 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.amany.taks.alarm.AlarmAppScreen
+import com.amany.taks.alarm.view.AlarmAppScreen
 import com.amany.taks.fav.FavoriteScreen
 import com.amany.taks.home.HomeScreen
 import com.amany.taks.models.local.db.WeatherLocalDataSourceImpl

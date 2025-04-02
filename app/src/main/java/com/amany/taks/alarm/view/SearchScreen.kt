@@ -1,15 +1,13 @@
-package com.amany.taks.alarm
+package com.amany.taks.alarm.view
 
 
 import android.app.AlarmManager
-import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
-import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -38,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,13 +50,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.amany.taks.R
+import com.amany.taks.alarm.model.db.AlarmDatabase
+import com.amany.taks.alarm.model.db.AlarmEntity
+import com.amany.taks.alarm.model.db.AlarmLocalDataSource
+import com.amany.taks.alarm.model.repo.AlarmRepository
+import com.amany.taks.alarm.model.AlarmWorker
+import com.amany.taks.alarm.viewmodel.AlarmViewModel
+import com.amany.taks.alarm.viewmodel.AlarmViewModelFactory
 import com.amany.taks.models.AlarmData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 @Composable
 fun CheckAlarmPermission() {
@@ -115,13 +127,26 @@ fun SearchScreen() {
 
 @Composable
 fun AlarmScreen(modifier: Modifier = Modifier) {
+    // Use LocalContext to get the current context
+    val context = LocalContext.current
+
+    // Initialize your repository and database
+    val db = remember { AlarmDatabase.getDatabase(context).alarmDao() }
+    val repository = remember { AlarmRepository(AlarmLocalDataSource(db)) }
+
+    // ViewModel setup
+    val viewModel: AlarmViewModel = viewModel(
+        factory = AlarmViewModelFactory(repository)
+    )
+
+    // Collect alarms state
+    val alarmList by viewModel.alarms.collectAsState(initial = emptyList())
     var timeString by remember { mutableStateOf(CalendarHelperUtil.convertTimeFromMillis(Calendar.getInstance().timeInMillis)) }
     val openAlertDialog = remember { mutableStateOf(true) }
-    val context = LocalContext.current
 
     if (!Settings.canDrawOverlays(context)) {
         if (openAlertDialog.value) {
-            OverlayPermissionDialog(
+            AlarmPermissionDialog(
                 onDismissRequest = {
                     openAlertDialog.value = false
                 },
@@ -140,7 +165,8 @@ fun AlarmScreen(modifier: Modifier = Modifier) {
     LaunchedEffect(Unit) {
         while (true) {
             delay(3600L)
-            timeString = CalendarHelperUtil.convertTimeFromMillis(Calendar.getInstance().timeInMillis)
+            timeString =
+                CalendarHelperUtil.convertTimeFromMillis(Calendar.getInstance().timeInMillis)
         }
     }
 
@@ -157,6 +183,8 @@ fun AlarmScreen(modifier: Modifier = Modifier) {
         AlarmList(Modifier)
     }
 }
+
+
 @Composable
 fun AlarmCard(
     modifier: Modifier = Modifier,
@@ -292,7 +320,7 @@ fun AlarmAppScreen(modifier: Modifier = Modifier) {
 
 
     if (openOverlayDialog.value) {
-        OverlayPermissionDialog(
+        AlarmPermissionDialog(
             onDismissRequest = { openOverlayDialog.value = false },
             onConfirmation = {
                 val intent = Intent(
@@ -342,27 +370,27 @@ fun AlarmPermissionDialog(
         }
     )
 }
-@Composable
-fun OverlayPermissionDialog(
-    onDismissRequest: () -> Unit,
-    onConfirmation: () -> Unit,
-) {
-    AlertDialog(
-        title = { Text(text = "Grant Overlay Permission") },
-        text = { Text(text = "This app needs overlay permission to show alarm notifications.") },
-        onDismissRequest = { /* Prevent dismissal */ },
-        confirmButton = {
-            TextButton(onClick = { onConfirmation() }) {
-                Text("Grant Permission")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { onDismissRequest() }) {
-                Text("Dismiss")
-            }
-        }
-    )
-}
+//@Composable
+//fun OverlayPermissionDialog(
+//    onDismissRequest: () -> Unit,
+//    onConfirmation: () -> Unit,
+//) {
+//    AlertDialog(
+//        title = { Text(text = "Grant Overlay Permission") },
+//        text = { Text(text = "This app needs overlay permission to show alarm notifications.") },
+//        onDismissRequest = { /* Prevent dismissal */ },
+//        confirmButton = {
+//            TextButton(onClick = { onConfirmation() }) {
+//                Text("Grant Permission")
+//            }
+//        },
+//        dismissButton = {
+//            TextButton(onClick = { onDismissRequest() }) {
+//                Text("Dismiss")
+//            }
+//        }
+//    )
+//}
 
 @Composable
 fun AlarmCard(
@@ -411,39 +439,34 @@ fun AlarmCard(
 fun AlarmList(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val db = remember { AlarmDatabase.getDatabase(context).alarmDao() }
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
-    var alarmList by remember { mutableStateOf<List<AlarmEntity>>(emptyList()) }
+    val alarmList by db.getAllAlarmsFlow().collectAsState(initial = emptyList())
+    var timePickerState by remember { mutableStateOf(false) }
 
-    // Load alarms from Room
-    LaunchedEffect(Unit) {
-        alarmList = db.getAllAlarms()
+    val timePickerDialog = remember {
+        TimePickerDialog(
+            context,
+            { _, hour: Int, minute: Int ->
+                val newCalendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val newAlarm = AlarmEntity(time = newCalendar.timeInMillis)
+
+                // Save alarm to Room
+                CoroutineScope(Dispatchers.IO).launch {
+                    db.insertAlarm(newAlarm)
+                }
+
+                // Schedule the alarm using WorkManager
+                AlarmUtil.scheduleAlarm(context, newAlarm.time, newAlarm.id)
+            },
+            Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
+            Calendar.getInstance().get(Calendar.MINUTE),
+            false
+        )
     }
-
-    val picker = TimePickerDialog(
-        context,
-        { _, hour: Int, minute: Int ->
-            val newCalendar = Calendar.getInstance()
-            newCalendar.set(Calendar.HOUR_OF_DAY, hour)
-            newCalendar.set(Calendar.MINUTE, minute)
-            newCalendar.set(Calendar.SECOND, 0)
-            newCalendar.set(Calendar.MILLISECOND, 0)
-            val newAlarm = AlarmEntity(time = newCalendar.timeInMillis)
-
-            // Save to Room
-            CoroutineScope(Dispatchers.IO).launch {
-                db.insertAlarm(newAlarm)
-                alarmList = db.getAllAlarms() // Refresh UI
-            }
-
-            // Set the alarm
-            alarmManager?.let {
-                AlarmUtil.setAlarm(context, it, newAlarm.time, newAlarm.id)
-            }
-        },
-        Calendar.getInstance().get(Calendar.HOUR_OF_DAY),
-        Calendar.getInstance().get(Calendar.MINUTE),
-        false
-    )
 
     Column(modifier) {
         if (alarmList.isNotEmpty()) {
@@ -462,16 +485,15 @@ fun AlarmList(modifier: Modifier = Modifier) {
                     AlarmData(alarm.id, alarm.time),
                     onDelete = { alarmToDelete ->
                         CoroutineScope(Dispatchers.IO).launch {
-                            db.deleteAlarm(AlarmEntity(alarmToDelete.id, alarmToDelete.time))
-                            alarmList = db.getAllAlarms() // Refresh UI
+                            val alarmEntity = AlarmEntity(id = alarmToDelete.id, time = alarmToDelete.time)
+                            db.deleteAlarm(alarmEntity)
                         }
-                        alarmManager?.let {
-                            AlarmUtil.cancelAlarm(context, it, AlarmEntity(alarmToDelete.id, alarmToDelete.time)) // ✅ Correct Type
-                        }
-                    }
-                    ,
+
+                        // Cancel the scheduled WorkManager alarm
+                        AlarmUtil.cancelAlarm(context, alarmToDelete.id)
+                    },
                     onEdit = {
-                        picker.show()
+                        timePickerState = true
                     }
                 )
             }
@@ -482,7 +504,7 @@ fun AlarmList(modifier: Modifier = Modifier) {
                 .align(Alignment.CenterHorizontally)
                 .padding(bottom = 40.dp),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 10.dp),
-            onClick = { picker.show() }
+            onClick = { timePickerState = true }
         ) {
             Text(
                 text = "Add New",
@@ -492,54 +514,40 @@ fun AlarmList(modifier: Modifier = Modifier) {
             )
         }
     }
-}
 
-class AlarmUtil {
-    companion object {
-        @JvmStatic
-        fun setAlarm(
-            context: Context,
-            alarmManager: AlarmManager,
-            timeInMillis: Long,
-            alarmId: Int
-        ) {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                alarmId,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            )
-
-            // Set the alarm with AlarmManager
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                timeInMillis,
-                pendingIntent
-            )
-
-            Toast.makeText(context, "Alarm Set", Toast.LENGTH_SHORT).show()
-        }
-
-        @JvmStatic
-        fun cancelAlarm(
-            context: Context,
-            alarmManager: AlarmManager,
-            alarm: AlarmEntity
-        ) {
-            val intent = Intent(context, AlarmReceiver::class.java)
-            val pendingIntent = PendingIntent.getBroadcast(
-                context,
-                alarm.id,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            )
-
-            // Cancel the scheduled alarm
-            alarmManager.cancel(pendingIntent)
-
-            Toast.makeText(context, "Alarm Canceled", Toast.LENGTH_SHORT).show()
-        }
+    if (timePickerState) {
+        timePickerDialog.show()
+        timePickerState = false
     }
 }
+
+
+object AlarmUtil {
+
+    fun scheduleAlarm(context: Context, timeInMillis: Long, alarmId: Int) {
+        val delay = timeInMillis - System.currentTimeMillis()
+
+        if (delay <= 0) return // Ensure it's a future time
+
+        val workData = Data.Builder()
+            .putInt("ALARM_ID", alarmId)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<AlarmWorker>()
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .setInputData(workData)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "ALARM_WORK_$alarmId",
+            ExistingWorkPolicy.REPLACE, // Replaces any existing work with the same name
+            workRequest
+        )
+    }
+
+    fun cancelAlarm(context: Context, alarmId: Int) {
+        WorkManager.getInstance(context).cancelUniqueWork("ALARM_WORK_$alarmId")
+    }
+}
+
 

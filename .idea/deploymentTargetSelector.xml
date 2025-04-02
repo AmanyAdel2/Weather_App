@@ -5,19 +5,19 @@
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="addToFavTest_AndRetrieve()">
+      <SelectionState runConfigName="testGetForecastWeather()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="removeFromFavTest_oneCity()">
+      <SelectionState runConfigName="getAlarms()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="testInsertAlarm()">
+      <SelectionState runConfigName="insertAlarm()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="testDeleteAlarm()">
+      <SelectionState runConfigName="deleteAlarm_removesAlarm()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
-      <SelectionState runConfigName="AlarmDaoTest">
+      <SelectionState runConfigName="insertAlarm_retrievesAlarm()">
         <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>

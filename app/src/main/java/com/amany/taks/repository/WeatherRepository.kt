@@ -16,12 +16,13 @@ import kotlinx.coroutines.flow.flowOn
 import retrofit2.HttpException
 import java.util.Locale
 
-class WeatherRepository private constructor(
+open class WeatherRepository private constructor(
     private val remoteDataSource: RemoteDataSource, private val localSource: WeatherLocalDataSource
 ) {
     suspend fun getCurrentWeather(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherList> {
         return remoteDataSource.getCurrentWeatherOverNetwork(lat,lon,units,lang)
     }
+
     suspend fun getForecastWeather(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherList> {
         return flow {
             val response = remoteDataSource.weathreService.getWeatherForecast(lat, lon, units, lang)
@@ -41,18 +42,19 @@ class WeatherRepository private constructor(
             }
         }.flowOn(Dispatchers.IO)
     }
+
     suspend fun getFavCitiesFromRoom(): Flow<List<FavoriteCity>> {
         return localSource.getFavCities()
     }
-
 
     suspend fun insertToFav(favoriteCity: FavoriteCity) {
         localSource.addToFav(favoriteCity)
     }
 
-     suspend fun deleteFromFav(favoriteCity: FavoriteCity) {
+    suspend fun deleteFromFav(favoriteCity: FavoriteCity) {
         localSource.removeFromFav(favoriteCity)
     }
+
     suspend fun fetchAndStoreWeather(city: FavoriteCity) {
         try {
             val response = remoteDataSource.weathreService.getWeatherByCity(city.name)
@@ -70,6 +72,7 @@ class WeatherRepository private constructor(
             Log.e("WeatherRepository", "Error fetching weather: ${e.message}")
         }
     }
+
     suspend fun getWeatherByCity(cityName: String, countryCode: String): WeatherDbRes? {
         return try {
             val query = "${cityName.trim()},${countryCode.trim()}"
@@ -87,10 +90,6 @@ class WeatherRepository private constructor(
             null
         }
     }
-
-
-
-
 
     fun getCityName(context: Context, lat: Double, lon: Double, onResult: (String?) -> Unit) {
         val geocoder = Geocoder(context, Locale.getDefault())
@@ -111,10 +110,6 @@ class WeatherRepository private constructor(
         }
     }
 
-
-
-
-
     fun getAllCurrentWeatherFromRoom(): Flow<WeatherDbRes> {
         return localSource.getAllStoredWeather()
     }
@@ -122,17 +117,14 @@ class WeatherRepository private constructor(
     suspend fun insertCurrentWeather(weatherResponse: WeatherDbRes) {
         localSource.addCurrentWeather(weatherResponse)
     }
-   suspend fun deleteStoredCurrentWeather() {
+
+    suspend fun deleteStoredCurrentWeather() {
         localSource.removeAllWeather()
     }
 
-
-
-
-
-
     companion object {
         private var INSTANCE: WeatherRepository? = null
+
         fun getInstance(
             currentWeatherRemoteRepository: RemoteDataSource,
             CurrentWeatherLocalRepository: WeatherLocalDataSource
@@ -144,5 +136,4 @@ class WeatherRepository private constructor(
             }
         }
     }
-
 }

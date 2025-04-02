@@ -64,6 +64,7 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+    androidTestImplementation(libs.core.testing)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -81,5 +82,23 @@ dependencies {
     implementation("org.osmdroid:osmdroid-android:6.1.14") // Latest stable version
     implementation("org.osmdroid:osmdroid-mapsforge:6.1.14")
 
+    // Mockito core library
+    testImplementation("org.mockito:mockito-core:4.0.0")
+    // Mockito dependencies
+    androidTestImplementation ("org.mockito:mockito-android:4.0.0")
+    testImplementation ("org.mockito.kotlin:mockito-kotlin:4.0.0")
+
+    // Mockito Kotlin support (if you are using Kotlin)
+    testImplementation("org.mockito.kotlin:mockito-kotlin:4.0.0")
+
+    // JUnit for testing
+    testImplementation("junit:junit:4.13.2")
+
+    // Coroutines test library (if you are testing coroutines)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.0")
+
+    // AndroidX testing library
+    testImplementation("androidx.arch.core:core-testing:2.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
 
 }
