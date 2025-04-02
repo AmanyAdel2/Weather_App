@@ -1,6 +1,12 @@
 package com.amany.taks.models
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+
 data class WeatherList(
+
+    var id:Int,
     val coord: Coord,
     var main: Main,
     var sys: Sys,
@@ -11,7 +17,7 @@ data class WeatherList(
     var visibility:Long,
     var dt:Long,
     var timezone:Double,
-    var id:Long,
+
     var name:String,
     var cod:Long,
     val dt_txt: String?

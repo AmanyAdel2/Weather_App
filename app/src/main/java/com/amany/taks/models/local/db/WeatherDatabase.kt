@@ -10,7 +10,7 @@ import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.WeatherListConverter
 
 
-@Database(entities = [FavoriteCity::class , WeatherDbRes::class], version = 3 )
+@Database(entities = [FavoriteCity::class , WeatherDbRes::class], version = 4,exportSchema = true )
 @TypeConverters(WeatherListConverter::class, CityConverter::class)
 abstract class WeatherDatabase : RoomDatabase(){
     abstract fun getFavoriteCityDao(): FavoriteDAO
