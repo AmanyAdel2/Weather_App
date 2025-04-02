@@ -34,6 +34,26 @@ class FavoriteCityViewModel(private val weatherRepository: WeatherRepository) : 
                 }
         }
     }
+    fun fetchAndStoreWeather(city: FavoriteCity) {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val response =
+                    city.countryCode?.let { weatherRepository.getWeatherByCity(city.name, it) }
+                if (response != null) {
+                    weatherRepository.insertCurrentWeather(response)
+                    Log.d("WeatherFetch", "Weather for ${city.name} stored successfully!")
+                } else {
+                    Log.e("WeatherFetch", "Failed to fetch weather for ${city.name}")
+                }
+            } catch (e: Exception) {
+                Log.e("WeatherFetch", "Error fetching weather: ${e.message}")
+            }
+        }
+    }
+
+
+
+
 
     fun insertCityToFavorite(favoriteCity: FavoriteCity) {
         viewModelScope.launch(Dispatchers.IO) {

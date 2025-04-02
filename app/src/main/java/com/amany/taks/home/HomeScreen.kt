@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amany.taks.R
+import com.amany.taks.models.SharedCityViewModel
 import com.amany.taks.models.SharedPrefs
 import com.amany.taks.models.local.db.WeatherLocalDataSourceImpl
 import com.amany.taks.models.remote.RemoteDataSource
@@ -63,6 +64,20 @@ fun HomeScreen() {
     val homeViewModel: HomeViewModel = viewModel(factory = factory)
     val forecastState by homeViewModel.forecastWeather.collectAsState()
     val currentTime = remember { mutableStateOf(getFormattedDateTime()) }
+    val sharedCityViewModel: SharedCityViewModel = viewModel()
+    val cityCoordinates by sharedCityViewModel.cityCoordinates.collectAsState()
+
+    LaunchedEffect(cityCoordinates) {
+        // Fetch weather for selected city when coordinates change
+        cityCoordinates?.let { (lat, lon) ->
+            val sharedPrefs = SharedPrefs.getInstance(context)
+            val units = sharedPrefs.getTemp() ?: "metric"
+            val lang = sharedPrefs.getLanguage() ?: "en"
+
+            homeViewModel.getCurrentWeather(lat, lon, units, lang)
+            homeViewModel.getForecastWeather(lat, lon, units, lang)
+        }
+    }
 
     LaunchedEffect(Unit) {
         val sharedPrefs = SharedPrefs.getInstance(context)
@@ -143,6 +158,7 @@ fun HomeScreen() {
                                 fontSize = 18.sp,
                                 color = Color.Gray
                             )
+                            Text(text = weather.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             Card { WeatherDetailRow("Humidity", "${weather.main.humidity}%")
                                 WeatherDetailRow("Wind Speed", "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}")
                                 WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise)) }

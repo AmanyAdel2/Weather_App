@@ -3,57 +3,46 @@ package com.amany.taks.fav
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.navigation.NavController
-import com.amany.taks.models.FavoriteCity
-import com.amany.taks.models.SharedPrefs
-import org.osmdroid.util.GeoPoint
-import android.app.Activity
-import android.content.Intent
-import android.view.MotionEvent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.amany.taks.fav.FavoriteCityViewModel
+import com.amany.taks.models.FavoriteCity
+import com.amany.taks.models.SharedPrefs
+import com.amany.taks.models.local.db.LocalState
+import com.amany.taks.repository.WeatherRepository
 import org.osmdroid.config.Configuration
+import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
-import java.util.Locale
 import android.location.Geocoder
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.ui.unit.dp
-import com.amany.taks.models.local.db.LocalState
-import com.amany.taks.repository.WeatherRepository
-
+import android.view.MotionEvent
+import com.amany.taks.models.SharedCityViewModel
+import java.util.Locale
 
 @Composable
 fun FavoriteScreen(weatherRepository: WeatherRepository) {
     val factory = remember { FavoriteCityViewModelFactory(weatherRepository) }
     val viewModel: FavoriteCityViewModel = viewModel(factory = factory)
+    val sharedCityViewModel: SharedCityViewModel = viewModel()
+
+
 
     // Collect favorite cities from ViewModel
     val citiesState by viewModel.cities.collectAsState()
@@ -85,7 +74,9 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
                     .background(MaterialTheme.colorScheme.background)
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -109,10 +100,18 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
                             } else {
                                 Column {
                                     cities.forEach { city ->
-                                        CityCard(city, onRemove = {
-                                            viewModel.removeCityFromFavorite(city)
-                                            Toast.makeText(context, "${city.name} removed", Toast.LENGTH_SHORT).show()
-                                        })
+                                        CityCard(city,
+                                            onCityClick = {
+                                                viewModel.fetchAndStoreWeather(city)
+                                                // Set city coordinates in shared ViewModel
+                                                sharedCityViewModel.setCityCoordinates(city.lat, city.lon)
+                                                Toast.makeText(context, "Fetching weather for ${city.name}", Toast.LENGTH_SHORT).show()
+                                            },
+                                            onRemove = {
+                                                viewModel.removeCityFromFavorite(city)
+                                                Toast.makeText(context, "${city.name} removed", Toast.LENGTH_SHORT).show()
+                                            }
+                                        )
                                         Spacer(modifier = Modifier.height(8.dp))
                                     }
                                 }
@@ -129,45 +128,38 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
         }
     }
 }
+
 @Composable
-fun CityCard(city: FavoriteCity, onRemove: () -> Unit) {
+fun CityCard(city: FavoriteCity, onCityClick: (FavoriteCity) -> Unit, onRemove: (FavoriteCity) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            .padding(vertical = 8.dp)
+            .clickable { onCityClick(city) },
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text(text = city.name, style = MaterialTheme.typography.bodyLarge, color = Color.Black)
+                Text(text = city.name)
 
             }
-            IconButton(onClick = onRemove) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Remove",
-                    tint = Color.Red,
-                    modifier = Modifier.size(40.dp)
-                )
+            IconButton(onClick = { onRemove(city) }) {
+                Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
             }
         }
     }
 }
 
-
-
-
 @Composable
 fun OpenStreetMapScreen(weatherRepository: WeatherRepository, onLocationSelected: () -> Unit) {
     val factory = remember { FavoriteCityViewModelFactory(weatherRepository) }
-    val viewModel: FavoriteCityViewModel = viewModel(factory = factory) // ✅ Provide ViewModel with factory
+    val viewModel: FavoriteCityViewModel = viewModel(factory = factory) // ViewModel with factory
 
     val context = LocalContext.current
     var selectedLocation by remember { mutableStateOf<GeoPoint?>(null) }
@@ -199,7 +191,7 @@ fun OpenStreetMapScreen(weatherRepository: WeatherRepository, onLocationSelected
                         mapView.invalidate()
 
                         selectedLocation = point
-                        cityName = getCityName(context, point.latitude, point.longitude)
+                        cityName = getCityName(context, point.latitude, point.longitude).toString()
                         return true
                     }
                 }
@@ -213,18 +205,27 @@ fun OpenStreetMapScreen(weatherRepository: WeatherRepository, onLocationSelected
         Button(
             onClick = {
                 selectedLocation?.let { location ->
+                    val (cityName, countryCode) = getCityName(context, location.latitude, location.longitude)
+
                     cityName?.let { name ->
-                        val favoriteCity = FavoriteCity(name, location.latitude, location.longitude)
-                        viewModel.insertCityToFavorite(favoriteCity) // ✅ Use ViewModel with factory
+                        countryCode?.let { country ->
+                            val favoriteCity = FavoriteCity(name, location.latitude, location.longitude, country)
+                            viewModel.insertCityToFavorite(favoriteCity)
 
-                        val sharedPrefs = SharedPrefs.getInstance(context)
-                        sharedPrefs.setLatitude(location.latitude)
-                        sharedPrefs.setLongitude(location.longitude)
+                            // Save location coordinates in SharedPrefs
+                            val sharedPrefs = SharedPrefs.getInstance(context)
+                            sharedPrefs.setLatitude(location.latitude)
+                            sharedPrefs.setLongitude(location.longitude)
 
-                        Toast.makeText(context, "$name added to favorites!", Toast.LENGTH_SHORT).show()
-                        onLocationSelected()
+                            Toast.makeText(context, "$name added to favorites!", Toast.LENGTH_SHORT).show()
+                            onLocationSelected()
+                        } ?: run {
+                            Toast.makeText(context, "Unable to fetch country code", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
+
+
             },
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
@@ -234,9 +235,12 @@ fun OpenStreetMapScreen(weatherRepository: WeatherRepository, onLocationSelected
 }
 
 
-// Function to Get City Name
-fun getCityName(context: Context, lat: Double, lon: Double): String? {
+fun getCityName(context: Context, lat: Double, lon: Double): Pair<String?, String?> {
     val geoCoder = Geocoder(context, Locale.getDefault())
     val fullAddress = geoCoder.getFromLocation(lat, lon, 1)
-    return fullAddress?.firstOrNull()?.adminArea
+
+    val cityName = fullAddress?.firstOrNull()?.adminArea ?: "Unknown City"
+    val countryCode = fullAddress?.firstOrNull()?.countryCode ?: "Unknown Country"
+
+    return Pair(cityName, countryCode)
 }
