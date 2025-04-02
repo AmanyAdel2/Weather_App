@@ -1,5 +1,7 @@
 package com.amany.taks.repository
 
+import android.content.Context
+import android.location.Geocoder
 import android.util.Log
 import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.WeatherList
@@ -12,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import retrofit2.HttpException
+import java.util.Locale
 
 class WeatherRepository private constructor(
     private val remoteDataSource: RemoteDataSource, private val localSource: WeatherLocalDataSource
@@ -49,6 +52,63 @@ class WeatherRepository private constructor(
 
      suspend fun deleteFromFav(favoriteCity: FavoriteCity) {
         localSource.removeFromFav(favoriteCity)
+    }
+    suspend fun fetchAndStoreWeather(city: FavoriteCity) {
+        try {
+            val response = remoteDataSource.weathreService.getWeatherByCity(city.name)
+
+            // Log response for debugging
+            Log.d("WeatherFetch", "Fetched Weather for ${city.name}: $response")
+
+            if (response != null) {
+                insertCurrentWeather(response) // Store weather data in Room
+                Log.d("WeatherRepository", "Weather for ${city.name} stored successfully!")
+            } else {
+                Log.e("WeatherRepository", "Failed to fetch weather for ${city.name}")
+            }
+        } catch (e: Exception) {
+            Log.e("WeatherRepository", "Error fetching weather: ${e.message}")
+        }
+    }
+    suspend fun getWeatherByCity(cityName: String, countryCode: String): WeatherDbRes? {
+        return try {
+            val query = "${cityName.trim()},${countryCode.trim()}"
+            Log.d("WeatherRepository", "Fetching weather for: $query")
+
+            val response = remoteDataSource.weathreService.getWeatherByCity(query)
+
+            Log.d("WeatherRepository", "Weather fetched successfully for $query: $response")
+            response
+        } catch (e: HttpException) {
+            Log.e("WeatherRepository", "HTTP Error fetching weather for $cityName: ${e.code()} - ${e.message()}")
+            null
+        } catch (e: Exception) {
+            Log.e("WeatherRepository", "Unexpected error fetching weather for $cityName: ${e.localizedMessage}")
+            null
+        }
+    }
+
+
+
+
+
+    fun getCityName(context: Context, lat: Double, lon: Double, onResult: (String?) -> Unit) {
+        val geocoder = Geocoder(context, Locale.getDefault())
+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
+                override fun onGeocode(addresses: MutableList<android.location.Address>) {
+                    onResult(addresses.firstOrNull()?.adminArea)
+                }
+
+                override fun onError(errorMessage: String?) {
+                    onResult(null)
+                }
+            })
+        } else {
+            val addressList = geocoder.getFromLocation(lat, lon, 1)
+            onResult(addressList?.firstOrNull()?.adminArea)
+        }
     }
 
 

@@ -29,6 +29,7 @@ interface WeathreService {
     suspend fun getWeatherByCity(
         @Query("q")
         city: String,
+
         @Query("appid")
         appid: String = "38cf948012a6c249938f9e7c56b8f698"
 

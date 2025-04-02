@@ -7,7 +7,7 @@ import com.amany.taks.models.HourlyForecast
 import com.amany.taks.models.WeatherList
 
 
-class WeatherResponse (
+data class WeatherResponse (
 
 
     var city: City,
