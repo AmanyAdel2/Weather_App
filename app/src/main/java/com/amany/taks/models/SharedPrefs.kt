@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import java.util.Locale
 
 class SharedPrefs internal constructor(private val context: Context) {
 
@@ -65,8 +66,8 @@ class SharedPrefs internal constructor(private val context: Context) {
         prefs.edit().putString(KEY_LANGUAGE, language).apply()
     }
 
-    fun getLanguage(): String? {
-        return prefs.getString(KEY_LANGUAGE, "en")
+    fun getLanguage(): String {
+        return prefs.getString(KEY_LANGUAGE, Locale.getDefault().language) ?: Locale.getDefault().language
     }
 
     fun clearLanguage() {

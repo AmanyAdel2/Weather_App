@@ -10,6 +10,5 @@ import com.amany.taks.models.WeatherList
 data class WeatherDbRes (val list: List<WeatherList>,
                          @PrimaryKey
                           val  city: City,
-                        //  val hourlyForecast: List<HourlyForecast>
 ){
 }

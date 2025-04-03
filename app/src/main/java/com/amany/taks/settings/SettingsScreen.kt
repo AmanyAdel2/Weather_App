@@ -64,30 +64,30 @@ fun SettingsScreen() {
     var windSpeed by remember { mutableStateOf(sharedPrefs.getWindSpeedPreference()) }
     var selectedTemperature by remember { mutableStateOf(sharedPrefs.getTemp()) }
 
-    val locationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        hasPermission = isGranted
-    }
-
-    LaunchedEffect(Unit) {
-        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-    }
-
-    LaunchedEffect(hasPermission, selectedMode) {
-        if (hasPermission && selectedMode == "GPS") {
-            requestLocationUpdates(fusedLocationClient) { lat, lon ->
-                latitude = lat
-                longitude = lon
-                if (lat != null && lon != null) {
-                    sharedPrefs.setLocation(lat, lon)
-                    // Toast.makeText(context, "Location: $lat, $lon", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-    }
+//    val locationPermissionLauncher = rememberLauncherForActivityResult(
+//        contract = ActivityResultContracts.RequestPermission()
+//    ) { isGranted ->
+//        hasPermission = isGranted
+//    }
+//
+//    LaunchedEffect(Unit) {
+//        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+//    }
+//
+//    LaunchedEffect(hasPermission, selectedMode) {
+//        if (hasPermission && selectedMode == "GPS") {
+//            requestLocationUpdates(fusedLocationClient) { lat, lon ->
+//                latitude = lat
+//                longitude = lon
+//                if (lat != null && lon != null) {
+//                    sharedPrefs.setLocation(lat, lon)
+//                    // Toast.makeText(context, "Location: $lat, $lon", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+//                }
+//            }
+//        }
+//    }
 
     Column(modifier = Modifier.padding(16.dp)) {
         Text(text = "Settings", fontWeight = FontWeight.Bold, fontSize = 22.sp)
@@ -118,7 +118,7 @@ fun SettingsScreen() {
             Text(text = "Select Location from Map", modifier = Modifier.padding(start = 8.dp))
         }
 
-        // Wind Speed Selection
+        // Wind Speed
         Text(text = "Wind Speed Unit", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Row {
             listOf("Miles/Hour", "Meter/Sec").forEach { speed ->
@@ -155,27 +155,10 @@ fun SettingsScreen() {
                 Spacer(modifier = Modifier.width(16.dp))
             }
         }
+        LanguageSelectionScreen(sharedPrefs, context as Activity)
     }
 }
-@Composable
-fun SettingsScreenn() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Icon on the screen
-        Icon(
-            imageVector = Icons.Default.Settings,
-            contentDescription = "Settings",
-            tint = Color(0xFF0F9D58)
-        )
-        // Text on the screen
-        Text(text = "Settings", color = Color.Black)
-    }
-}
+
 @Composable
 fun WindSpeedSelection(sharedPrefs: SharedPrefs) {
     val context = LocalContext.current
@@ -218,37 +201,37 @@ fun setAppLocale(activity: Activity, languageCode: String) {
     // Restart activity to apply language change instantly
     activity.recreate()
 }
-@Composable
-fun LanguageSelectionScreen(sharedPrefs: SharedPrefs, activity: Activity) {
-    var selectedLanguage by remember { mutableStateOf(sharedPrefs.getLanguage()) }
-    val context = LocalContext.current
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Text(text = "Language", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row {
-            listOf("ar" to "Arabic", "en" to "English").forEach { (code, label) ->
-                RadioButton(
-                    selected = selectedLanguage == code,
-                    onClick = {
-                        selectedLanguage = code
-                        sharedPrefs.setLanguage(code)
-                        setAppLocale(activity, code) // Change language dynamically
-                        Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
-                    }
-                )
-                Text(text = label, modifier = Modifier.padding(start = 8.dp))
-                Spacer(modifier = Modifier.width(16.dp))
-            }
-        }
-    }
-}
+//@Composable
+//fun LanguageSelectionScreen(sharedPrefs: SharedPrefs, activity: Activity) {
+//    var selectedLanguage by remember { mutableStateOf(sharedPrefs.getLanguage()) }
+//    val context = LocalContext.current
+//
+//    Column(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .padding(16.dp)
+//    ) {
+//        Text(text = "Language", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+//
+//        Spacer(modifier = Modifier.height(8.dp))
+//
+//        Row {
+//            listOf("ar" to "Arabic", "en" to "English").forEach { (code, label) ->
+//                RadioButton(
+//                    selected = selectedLanguage == code,
+//                    onClick = {
+//                        selectedLanguage = code
+//                        sharedPrefs.setLanguage(code)
+//                        setAppLocale(activity, code) // Change language dynamically
+//                        Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
+//                    }
+//                )
+//                Text(text = label, modifier = Modifier.padding(start = 8.dp))
+//                Spacer(modifier = Modifier.width(16.dp))
+//            }
+//        }
+//    }
+//}
 @Composable
 fun TemperatureSelectionScreen(sharedPrefs: SharedPrefs) {
     var selectedTemperature by remember { mutableStateOf(sharedPrefs.getTemp()) }
@@ -326,8 +309,8 @@ fun requestLocationUpdates(
 ) {
     val locationRequest = LocationRequest.create().apply {
         priority = Priority.PRIORITY_HIGH_ACCURACY
-        interval = 5000  // Update every 5 seconds
-        fastestInterval = 2000  // Fastest possible update interval
+        interval = 5000
+        fastestInterval = 2000
     }
 
     val locationCallback = object : LocationCallback() {
@@ -344,4 +327,65 @@ fun requestLocationUpdates(
         Looper.getMainLooper()
     )
 }
+fun setAppLocale(activity: Activity) {
+    val defaultLocale = Locale.getDefault().language  // Get system language
+    applyLocale(activity, defaultLocale)
+}
+
+fun applyLocale(activity: Activity, languageCode: String) {
+    val locale = Locale(languageCode)
+    Locale.setDefault(locale)
+
+    val config = Configuration()
+    config.setLocale(locale)
+
+    activity.resources.updateConfiguration(
+        config,
+        activity.resources.displayMetrics
+    )
+
+    activity.recreate()
+}
+@Composable
+fun LanguageSelectionScreen(sharedPrefs: SharedPrefs, activity: Activity) {
+    var selectedLanguage by remember { mutableStateOf(sharedPrefs.getLanguage() ?: Locale.getDefault().language) }
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(text = "Select Language", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val languages = listOf("en" to "English", "ar" to "Arabic", "fr" to "French")
+
+        Row {
+            languages.forEach { (code, label) ->
+                RadioButton(
+                    selected = selectedLanguage == code,
+                    onClick = {
+                        selectedLanguage = code
+                        sharedPrefs.setLanguage(code)
+                        applyLocale(activity, code)  // Apply selected language
+                        Toast.makeText(context, "$label selected", Toast.LENGTH_SHORT).show()
+                    }
+                )
+                Text(text = label, modifier = Modifier.padding(start = 8.dp))
+                Spacer(modifier = Modifier.width(16.dp))
+            }
+        }
+    }
+}
+fun restartApp(activity: Activity) {
+    val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
+    intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+    activity.startActivity(intent)
+    Runtime.getRuntime().exit(0)  // Force restart
+}
+
+
+
 

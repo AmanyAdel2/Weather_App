@@ -1,8 +1,12 @@
 package com.amany.taks.home
 
 
+import android.Manifest
 import android.os.Build
 import android.util.Log
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,6 +35,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,6 +53,8 @@ import com.amany.taks.models.remote.RemoteDataSource
 import com.amany.taks.models.remote.RetrofitHelper
 import com.amany.taks.models.remote.WeatherState
 import com.amany.taks.repository.WeatherRepository
+import com.amany.taks.settings.requestLocationUpdates
+import com.google.android.gms.location.LocationServices
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -67,31 +74,41 @@ fun HomeScreen() {
     val sharedCityViewModel: SharedCityViewModel = viewModel()
     val cityCoordinates by sharedCityViewModel.cityCoordinates.collectAsState()
 
-    LaunchedEffect(cityCoordinates) {
-        // Fetch weather for selected city when coordinates change
-        cityCoordinates?.let { (lat, lon) ->
-            val sharedPrefs = SharedPrefs.getInstance(context)
-            val units = sharedPrefs.getTemp() ?: "metric"
-            val lang = sharedPrefs.getLanguage() ?: "en"
+    val sharedPrefs = remember { SharedPrefs.getInstance(context) }
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var hasPermission by remember { mutableStateOf(false) }
 
-            homeViewModel.getCurrentWeather(lat, lon, units, lang)
-            homeViewModel.getForecastWeather(lat, lon, units, lang)
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasPermission = isGranted
+    }
+
+    // Request location permission on launch
+    LaunchedEffect(Unit) {
+        locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    // Fetch weather based on current location if permission is granted
+    LaunchedEffect(hasPermission) {
+        if (hasPermission) {
+            requestLocationUpdates(fusedLocationClient) { lat, lon ->
+                if (lat != null && lon != null) {
+                    sharedPrefs.setLocation(lat, lon)
+                    val units = sharedPrefs.getTemp() ?: "metric"
+                    val lang = sharedPrefs.getLanguage() ?: "en"
+
+                    homeViewModel.getCurrentWeather(lat, lon, units, lang)
+                    homeViewModel.getForecastWeather(lat, lon, units, lang)
+                } else {
+                    Toast.makeText(context, "Failed to get location", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
+    // Continuously update the time
     LaunchedEffect(Unit) {
-        val sharedPrefs = SharedPrefs.getInstance(context)
-        val latitude = sharedPrefs.getLatitude()
-        val longitude = sharedPrefs.getLongitude()
-        val units = sharedPrefs.getTemp() ?: "metric"
-        val lang = sharedPrefs.getLanguage() ?: "en"
-
-        if (latitude != null && longitude != null) {
-            homeViewModel.getCurrentWeather(latitude, longitude, units, lang)
-            homeViewModel.getForecastWeather(latitude, longitude, units, lang)
-        } else {
-            Log.e("HomeScreen", "Latitude or Longitude is NULL")
-        }
         while (true) {
             currentTime.value = getFormattedDateTime()
             kotlinx.coroutines.delay(1000)
@@ -99,7 +116,6 @@ fun HomeScreen() {
     }
 
     val result by homeViewModel.currentWeather.collectAsState()
-    val sharedPrefs = SharedPrefs.getInstance(context)
     val temperatureUnit = sharedPrefs.getTemp()
 
     Box(
@@ -159,15 +175,13 @@ fun HomeScreen() {
                                 color = Color.Gray
                             )
                             Text(text = weather.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Card { WeatherDetailRow("Humidity", "${weather.main.humidity}%")
+                            Card {
+                                WeatherDetailRow("Humidity", "${weather.main.humidity}%")
                                 WeatherDetailRow("Wind Speed", "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}")
-                                WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise)) }
-
-
-
+                                WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise))
+                            }
                         }
                     }
-
 
                     Text("Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     LazyRow {
@@ -181,8 +195,6 @@ fun HomeScreen() {
                             val weatherData = (forecastState as WeatherState.Success).weatherResponse
                             Text("5 Days Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             Card { FiveDayForecast(weatherData.list, SharedPrefs.getInstance(context)) }
-
-
                         }
                         is WeatherState.Failure -> {
                             Text(text = "Failed to load forecast", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
@@ -196,7 +208,6 @@ fun HomeScreen() {
         }
     }
 }
-
 
 
 @Composable
