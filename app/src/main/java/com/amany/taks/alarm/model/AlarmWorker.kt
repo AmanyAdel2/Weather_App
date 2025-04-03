@@ -1,31 +1,31 @@
-package com.amany.taks.alarm
+package com.amany.taks.alarm.model
 
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-
+import android.os.Build
+import androidx.work.Worker
+import androidx.work.WorkerParameters
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.os.Build
+import android.net.Uri
 import androidx.core.app.NotificationCompat
 import com.amany.taks.R
 
-class AlarmReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context?, intent: Intent?) {
-        context?.let {
-            showNotification(it)
-        }
+class AlarmWorker(context: Context, workerParams: WorkerParameters) :
+    Worker(context, workerParams) {
+
+    override fun doWork(): Result {
+        val alarmId = inputData.getInt("ALARM_ID", 0)
+        showNotification(applicationContext, alarmId)
+        return Result.success()
     }
 
-    private fun showNotification(context: Context) {
+    private fun showNotification(context: Context, alarmId: Int) {
         val channelId = "alarm_channel"
-        val notificationId = 1
+        val notificationId = alarmId // Use alarm ID to avoid overwriting notifications
 
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        // Create notification channel for Android 8.0+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
@@ -35,15 +35,16 @@ class AlarmReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        // Build the notification
+        val soundUri: Uri = Uri.parse("android.resource://${context.packageName}/raw/alarm_sound")
+
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_alarm)
-            .setContentTitle("Alarm Triggered")
-            .setContentText("Your alarm is ringing!")
+            .setSmallIcon(R.drawable._03d)
+            .setContentTitle("Taks")
+            .setContentText("Check the weather, Harry Up!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 
-        // Show notification
+
         notificationManager.notify(notificationId, builder.build())
     }
 }
