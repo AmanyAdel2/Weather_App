@@ -42,7 +42,6 @@ class AlarmReceiver : BroadcastReceiver() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
 
-        // Show notification
         notificationManager.notify(notificationId, builder.build())
     }
 }

@@ -1,4 +1,4 @@
-package com.amany.taks.alarm
+package com.amany.taks.alarm.model.db
 
 import android.content.Context
 import androidx.room.Database
@@ -9,6 +9,7 @@ import androidx.room.*
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "alarms")
 data class AlarmEntity(
@@ -26,6 +27,8 @@ interface AlarmDao {
 
     @Delete
     suspend fun deleteAlarm(alarm: AlarmEntity)
+    @Query("SELECT * FROM alarms")
+    fun getAllAlarmsFlow(): Flow<List<AlarmEntity>>
 }
 
 @Database(entities = [AlarmEntity::class], version = 1)

@@ -26,7 +26,6 @@ class AlarmViewModel(private val repository: AlarmRepository) : ViewModel() {
     }
 }
 
-// The ViewModelFactory class to instantiate AlarmViewModel
 class AlarmViewModelFactory(
     private val repository: AlarmRepository
 ) : ViewModelProvider.Factory {

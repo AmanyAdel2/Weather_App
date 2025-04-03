@@ -100,5 +100,6 @@ dependencies {
     // AndroidX testing library
     testImplementation("androidx.arch.core:core-testing:2.1.0")
     implementation("androidx.work:work-runtime-ktx:2.8.1")
+    implementation("com.airbnb.android:lottie-compose:6.1.0")
 
 }

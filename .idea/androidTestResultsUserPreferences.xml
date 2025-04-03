@@ -188,6 +188,19 @@
             </AndroidTestResultsTableState>
           </value>
         </entry>
+        <entry key="215270152">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Xiaomi M2003J15SC" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
         <entry key="306313770">
           <value>
             <AndroidTestResultsTableState>
@@ -242,6 +255,19 @@
             </AndroidTestResultsTableState>
           </value>
         </entry>
+        <entry key="1297108578">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Xiaomi M2003J15SC" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
         <entry key="1528878637">
           <value>
             <AndroidTestResultsTableState>
@@ -249,6 +275,19 @@
                 <map>
                   <entry key="Duration" value="90" />
                   <entry key="Nexus_5X_API_35" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Xiaomi M2003J15SC" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1702930972">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
                   <entry key="Tests" value="360" />
                   <entry key="Xiaomi M2003J15SC" value="120" />
                 </map>
