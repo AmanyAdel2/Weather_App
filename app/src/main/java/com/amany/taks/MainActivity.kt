@@ -10,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -49,14 +50,13 @@ class MainActivity : ComponentActivity() {
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentRoute = navBackStackEntry?.destination?.route
                 Surface(color = Color.White) {
-                    // Scaffold Component
                     Scaffold(
                         // Bottom navigation
                         bottomBar = {
                             if (currentRoute != "splash") { // Hide bottom bar on splash
                                 BottomNavigationBar(navController = navController)
                             }}, content = { padding ->
-                            // Nav host: where screens are placed
+
                             NavHostContainer(navController = navController, padding = padding,weatherRepository)
                         }
                     )
@@ -165,8 +165,24 @@ fun SplashScreen(navController: NavController) {
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        LottieAnimation(composition = composition, progress = { progress })
+    Box(
+        modifier = Modifier
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            LottieAnimation(
+                composition = composition,
+                progress = { progress },
+                modifier = Modifier.size(260.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+        }
     }
+
 }
 

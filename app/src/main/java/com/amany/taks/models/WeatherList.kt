@@ -46,7 +46,7 @@ data class City(
 )
 data class HourlyForecast(
     val dt: Long,
-    val dt_txt: String?, // ✅ Ensure this is present
+    val dt_txt: String?,
     val main: Main,
     val weather: List<Weather>,
     val clouds: Clouds,

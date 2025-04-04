@@ -22,7 +22,6 @@ import kotlin.math.roundToInt
 
 @Composable
 fun FiveDayForecast(forecastList: List<HourlyForecast>, sharedPrefs: SharedPrefs) {
-    // Group hourly forecasts by unique days
     val groupedForecast = forecastList.groupBy { it.dt_txt?.split(" ")?.get(0) ?:  0} // Extract "yyyy-MM-dd"
     val dailyForecasts = groupedForecast.values.take(5) // Take first 5 unique days
 
@@ -38,7 +37,6 @@ fun DailyForecastItem(dailyData: List<HourlyForecast>, sharedPrefs: SharedPrefs)
     val temperatureUnit = sharedPrefs.getTemp()
     val temperatureSymbol = getTemperatureSymbol(temperatureUnit)
 
-    // Calculate the average temperature for the day
     val averageTemp = dailyData.map { it.main.temp }.average()
     val convertedTemperature = convertTemperature(averageTemp, temperatureUnit)
 
@@ -50,7 +48,8 @@ fun DailyForecastItem(dailyData: List<HourlyForecast>, sharedPrefs: SharedPrefs)
         modifier = Modifier
             .width(120.dp)
             .padding(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF292929))
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(20.dp)
     ) {
         Column(
             modifier = Modifier.padding(12.dp),
@@ -60,7 +59,7 @@ fun DailyForecastItem(dailyData: List<HourlyForecast>, sharedPrefs: SharedPrefs)
                 text = date,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = Color.White
+                color = Color.Black
             )
 
             Image(
@@ -75,7 +74,7 @@ fun DailyForecastItem(dailyData: List<HourlyForecast>, sharedPrefs: SharedPrefs)
                 text = "${convertedTemperature.roundToInt()}°$temperatureSymbol",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.Black
             )
         }
     }
@@ -116,7 +115,7 @@ fun ForecastItem(forecast: HourlyForecast) {
 
     val temperatureMin = forecast.main.temp_min.roundToInt()
     val temperatureMax = forecast.main.temp_max.roundToInt()
-    val temperatureSymbol = "°C"  // Adjust based on user preference
+    val temperatureSymbol = "°C"
 
     val weatherIcon = getWeatherIcon(forecast.weather.firstOrNull()?.icon)
 
@@ -125,7 +124,7 @@ fun ForecastItem(forecast: HourlyForecast) {
             .fillMaxWidth()
             .padding(8.dp),
         shape = RoundedCornerShape(10.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(20.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

@@ -383,7 +383,7 @@ fun restartApp(activity: Activity) {
     val intent = activity.packageManager.getLaunchIntentForPackage(activity.packageName)
     intent?.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
     activity.startActivity(intent)
-    Runtime.getRuntime().exit(0)  // Force restart
+    Runtime.getRuntime().exit(0)
 }
 
 

@@ -1,6 +1,7 @@
 package com.amany.taks.alarm
 
 import android.R
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -13,7 +14,16 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
-
+import com.amany.taks.home.convertTemperature
+import com.amany.taks.home.getWeatherIcon
+import com.amany.taks.models.SharedPrefs
+import com.amany.taks.models.local.db.WeatherLocalDataSourceImpl
+import com.amany.taks.models.remote.RemoteDataSource
+import com.amany.taks.models.remote.RetrofitHelper.retrofit
+import com.amany.taks.models.remote.WeathreService
+import com.amany.taks.repository.WeatherRepository
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 
 class VibratorService : Service() {
     private var vibrator: Vibrator? = null
@@ -33,6 +43,7 @@ class VibratorService : Service() {
         }
     }
 
+    @SuppressLint("ForegroundServiceType")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(1, createNotification(this))
 
@@ -58,10 +69,24 @@ class VibratorService : Service() {
             notificationManager.createNotificationChannel(channel)
         }
 
+        // Fetch weather data
+        val weatherData = runBlocking {
+            val localDataSource = WeatherLocalDataSourceImpl.getInstance(context)
+            val remoteDataSource = RemoteDataSource.getInstance(retrofit.create(WeathreService::class.java))
+            val weatherRepository = WeatherRepository.getInstance(remoteDataSource, localDataSource)
+            val sharedPrefs = SharedPrefs.getInstance(context)
+            val lat = sharedPrefs.getLatitude() ?: 40.7128
+            val lon = sharedPrefs.getLongitude() ?: -74.0060
+            weatherRepository.getCurrentWeather(lat, lon, "metric", "en").first()
+        }
+
+        val weatherIcon = getWeatherIcon(weatherData.weather.firstOrNull()?.icon)
+        val convertedTemperature = convertTemperature(weatherData.main.temp, "Celsius")
+
         return NotificationCompat.Builder(context, "200")
             .setContentTitle("Taks")
-            .setContentText("Check the weather, Harry!")
-            .setSmallIcon(R.drawable.sym_def_app_icon) // Replace with your own icon
+            .setContentText("Weather: ${weatherData.weather.firstOrNull()?.description?.capitalize()} | ${convertedTemperature}°C| ${weatherData.name}")
+            .setSmallIcon(weatherIcon)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .build()
     }

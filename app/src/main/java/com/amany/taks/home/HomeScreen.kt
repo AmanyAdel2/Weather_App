@@ -170,7 +170,8 @@ fun HomeScreen() {
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
-                            Text(text = weather.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)}
+
+                         Text(text = weather.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)}
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Image(
                                     painter = painterResource(id = R.drawable.humdity),

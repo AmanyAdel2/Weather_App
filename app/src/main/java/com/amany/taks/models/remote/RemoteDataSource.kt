@@ -1,5 +1,6 @@
 package com.amany.taks.models.remote
 
+import android.util.Log
 import com.amany.taks.models.WeatherList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -12,7 +13,10 @@ class RemoteDataSource(val weathreService: WeathreService) {
         flow {
             val response = weathreService.getCurrentWeather(lat,lon, units,lang).body()
             if(response!=null){
+                Log.d("API_CALL", "Current API Response: $response")
+
                 emit(response)
+
             }else{
                 throw Exception("No data Received")
             }

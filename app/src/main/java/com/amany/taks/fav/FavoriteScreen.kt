@@ -1,15 +1,13 @@
 package com.amany.taks.fav
 
 import android.content.Context
+import android.location.Geocoder
+import android.view.MotionEvent
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LocationOn
@@ -20,33 +18,30 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.amany.taks.models.FavoriteCity
 import com.amany.taks.models.SharedPrefs
 import com.amany.taks.models.local.db.LocalState
+import com.amany.taks.models.local.db.WeatherDbRes
+import com.amany.taks.models.remote.WeatherResponse
 import com.amany.taks.repository.WeatherRepository
 import org.osmdroid.config.Configuration
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Overlay
-import android.location.Geocoder
-import android.view.MotionEvent
-import com.amany.taks.models.SharedCityViewModel
 import java.util.Locale
 
 @Composable
 fun FavoriteScreen(weatherRepository: WeatherRepository) {
     val factory = remember { FavoriteCityViewModelFactory(weatherRepository) }
     val viewModel: FavoriteCityViewModel = viewModel(factory = factory)
-    val sharedCityViewModel: SharedCityViewModel = viewModel()
-
-
-
-    // Collect favorite cities from ViewModel
-    val citiesState by viewModel.cities.collectAsState()
     val context = LocalContext.current
+
+    val citiesState by viewModel.cities.collectAsState()
+    val weatherState by viewModel.weather.collectAsState()
 
     var showMap by remember { mutableStateOf(false) }
 
@@ -93,8 +88,8 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
                             CircularProgressIndicator()
                         }
 
-                        is LocalState.Success -> {
-                            val cities = (citiesState as LocalState.Success).favoriteCity
+                        is LocalState.Success<*> -> {
+                            val cities = (citiesState as LocalState.Success<List<FavoriteCity>>).data
                             if (cities.isEmpty()) {
                                 Text("No favorite cities yet", color = Color.Gray)
                             } else {
@@ -102,14 +97,10 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
                                     cities.forEach { city ->
                                         CityCard(city,
                                             onCityClick = {
-                                                viewModel.fetchAndStoreWeather(city)
-                                                // Set city coordinates in shared ViewModel
-                                                sharedCityViewModel.setCityCoordinates(city.lat, city.lon)
-                                                Toast.makeText(context, "Fetching weather for ${city.name}", Toast.LENGTH_SHORT).show()
+                                                viewModel.fetchWeatherForCity(city)
                                             },
                                             onRemove = {
                                                 viewModel.removeCityFromFavorite(city)
-                                                Toast.makeText(context, "${city.name} removed", Toast.LENGTH_SHORT).show()
                                             }
                                         )
                                         Spacer(modifier = Modifier.height(8.dp))
@@ -123,6 +114,9 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
                             Text("Error: ${error.message}", color = Color.Red)
                         }
                     }
+
+
+
                 }
             }
         }
@@ -147,11 +141,33 @@ fun CityCard(city: FavoriteCity, onCityClick: (FavoriteCity) -> Unit, onRemove: 
         ) {
             Column {
                 Text(text = city.name)
-
             }
             IconButton(onClick = { onRemove(city) }) {
                 Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete")
             }
+        }
+    }
+}
+
+@Composable
+fun WeatherCard(weather: WeatherDbRes) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = "City: ${weather.city?.name}")
+            Text(text = "Temperature: ${weather.list.first().main?.temp}")
+            Text(text = "Humidity: ${weather.list.first().main?.humidity}")
+            // Add more weather details as needed
         }
     }
 }

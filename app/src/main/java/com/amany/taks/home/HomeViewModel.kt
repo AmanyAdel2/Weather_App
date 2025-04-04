@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.amany.taks.models.local.db.WeatherDbRes
 import com.amany.taks.models.remote.WeatherState
 import com.amany.taks.repository.WeatherRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +46,7 @@ class HomeViewModel(private val weatherRepository: WeatherRepository, private va
                 }
                 .collect { forecast ->
                     if (forecast.list.isNotEmpty()) {
+
                         _forecastWeather.value = WeatherState.Success(forecast)
                         Log.d(TAG, "Forecast Loaded: ${forecast.list.size} items")
                     } else {

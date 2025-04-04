@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import retrofit2.HttpException
+import retrofit2.Response
 import java.util.Locale
 
 open class WeatherRepository private constructor(
@@ -23,7 +24,7 @@ open class WeatherRepository private constructor(
         return remoteDataSource.getCurrentWeatherOverNetwork(lat,lon,units,lang)
     }
 
-    suspend fun getForecastWeather(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherList> {
+    fun getForecastWeather(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherList> {
         return flow {
             val response = remoteDataSource.weathreService.getWeatherForecast(lat, lon, units, lang)
 
@@ -43,7 +44,7 @@ open class WeatherRepository private constructor(
         }.flowOn(Dispatchers.IO)
     }
 
-    suspend fun getFavCitiesFromRoom(): Flow<List<FavoriteCity>> {
+     fun getFavCitiesFromRoom(): Flow<List<FavoriteCity>> {
         return localSource.getFavCities()
     }
 
@@ -55,72 +56,47 @@ open class WeatherRepository private constructor(
         localSource.removeFromFav(favoriteCity)
     }
 
-    suspend fun fetchAndStoreWeather(city: FavoriteCity) {
-        try {
-            val response = remoteDataSource.weathreService.getWeatherByCity(city.name)
+//    suspend fun fetchAndStoreWeather(lat: Double, lon: Double, units: String, lang: String) {
+//        try {
+//            val response = remoteDataSource.weathreService.getWeatherByCity(lat, lon, units, lang)
+//            val city:FavoriteCity= FavoriteCity(response.city?.name!!,lat,lon,response.city?.country!!)
+//
+//           // debugging
+//          Log.d("WeatherFetch", "Fetched Weather for ${city.name}: $response")
+//
+//            if (response != null) {
+//              insertCurrentWeather(response) // Store weather data in Room
+//                Log.d("WeatherRepository", "Weather for ${city.name} stored successfully!")
+//            } else {
+//              Log.e("WeatherRepository", "Failed to fetch weather for ${city.name}")
+//           }
+//        } catch (e: Exception) {
+//          Log.e("WeatherRepository", "Error fetching weather: ${e.message}")
+//        }
+//   }
 
-            // Log response for debugging
-            Log.d("WeatherFetch", "Fetched Weather for ${city.name}: $response")
-
-            if (response != null) {
-                insertCurrentWeather(response) // Store weather data in Room
-                Log.d("WeatherRepository", "Weather for ${city.name} stored successfully!")
-            } else {
-                Log.e("WeatherRepository", "Failed to fetch weather for ${city.name}")
+    suspend fun getWeatherByCity(lat: Double, lon: Double, units: String, lang: String): Flow<WeatherDbRes?> {
+        return flow {
+            try {
+                val response = remoteDataSource.weathreService.getWeatherByCity(lat, lon, units, lang)
+                Log.d("WeatherRepository", "Weather fetched successfully for $lat, $lon: $response")
+                emit(response)
+            } catch (e: HttpException) {
+                Log.e("WeatherRepository", "HTTP Error fetching weather for $lat, $lon: ${e.code()} - ${e.message()}")
+                emit(null)
+            } catch (e: Exception) {
+                Log.e("WeatherRepository", "Unexpected error fetching weather: ${e.localizedMessage}")
+                emit(null)
             }
-        } catch (e: Exception) {
-            Log.e("WeatherRepository", "Error fetching weather: ${e.message}")
-        }
+        }.flowOn(Dispatchers.IO)
     }
 
-    suspend fun getWeatherByCity(cityName: String, countryCode: String): WeatherDbRes? {
-        return try {
-            val query = "${cityName.trim()},${countryCode.trim()}"
-            Log.d("WeatherRepository", "Fetching weather for: $query")
 
-            val response = remoteDataSource.weathreService.getWeatherByCity(query)
 
-            Log.d("WeatherRepository", "Weather fetched successfully for $query: $response")
-            response
-        } catch (e: HttpException) {
-            Log.e("WeatherRepository", "HTTP Error fetching weather for $cityName: ${e.code()} - ${e.message()}")
-            null
-        } catch (e: Exception) {
-            Log.e("WeatherRepository", "Unexpected error fetching weather for $cityName: ${e.localizedMessage}")
-            null
-        }
-    }
 
-    fun getCityName(context: Context, lat: Double, lon: Double, onResult: (String?) -> Unit) {
-        val geocoder = Geocoder(context, Locale.getDefault())
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-            geocoder.getFromLocation(lat, lon, 1, object : Geocoder.GeocodeListener {
-                override fun onGeocode(addresses: MutableList<android.location.Address>) {
-                    onResult(addresses.firstOrNull()?.adminArea)
-                }
 
-                override fun onError(errorMessage: String?) {
-                    onResult(null)
-                }
-            })
-        } else {
-            val addressList = geocoder.getFromLocation(lat, lon, 1)
-            onResult(addressList?.firstOrNull()?.adminArea)
-        }
-    }
 
-    fun getAllCurrentWeatherFromRoom(): Flow<WeatherDbRes> {
-        return localSource.getAllStoredWeather()
-    }
-
-    suspend fun insertCurrentWeather(weatherResponse: WeatherDbRes) {
-        localSource.addCurrentWeather(weatherResponse)
-    }
-
-    suspend fun deleteStoredCurrentWeather() {
-        localSource.removeAllWeather()
-    }
 
     companion object {
         private var INSTANCE: WeatherRepository? = null
