@@ -46,7 +46,7 @@ fun FavoriteScreen(weatherRepository: WeatherRepository) {
     var showMap by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        viewModel.getFavouriteCitiesFromRoom() // Load favorite cities when screen opens
+        viewModel.getFavouriteCitiesFromRoom()
     }
 
     Scaffold(
@@ -167,7 +167,6 @@ fun WeatherCard(weather: WeatherDbRes) {
             Text(text = "City: ${weather.city?.name}")
             Text(text = "Temperature: ${weather.list.first().main?.temp}")
             Text(text = "Humidity: ${weather.list.first().main?.humidity}")
-            // Add more weather details as needed
         }
     }
 }
