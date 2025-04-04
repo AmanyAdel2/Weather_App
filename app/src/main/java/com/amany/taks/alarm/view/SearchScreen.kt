@@ -127,20 +127,15 @@ fun SearchScreen() {
 
 @Composable
 fun AlarmScreen(modifier: Modifier = Modifier) {
-    // Use LocalContext to get the current context
     val context = LocalContext.current
 
-    // Initialize your repository and database
+
     val db = remember { AlarmDatabase.getDatabase(context).alarmDao() }
     val repository = remember { AlarmRepository(AlarmLocalDataSource(db)) }
 
-    // ViewModel setup
     val viewModel: AlarmViewModel = viewModel(
         factory = AlarmViewModelFactory(repository)
     )
-
-    // Collect alarms state
-    val alarmList by viewModel.alarms.collectAsState(initial = emptyList())
     var timeString by remember { mutableStateOf(CalendarHelperUtil.convertTimeFromMillis(Calendar.getInstance().timeInMillis)) }
     val openAlertDialog = remember { mutableStateOf(true) }
 

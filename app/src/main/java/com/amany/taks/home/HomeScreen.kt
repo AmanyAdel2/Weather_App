@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -120,8 +121,8 @@ fun HomeScreen() {
 
     Box(
         modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFF121212)),
+            .fillMaxSize(),
+
         contentAlignment = Alignment.TopCenter
     ) {
         Column(
@@ -132,7 +133,7 @@ fun HomeScreen() {
                 text = currentTime.value,
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = Color.Black
             )
 
             when (val response = result) {
@@ -149,12 +150,7 @@ fun HomeScreen() {
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Card(
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.padding(16.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E))
-                    ) {
-                        Column(
+                     Column(
                             modifier = Modifier.padding(16.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
@@ -164,26 +160,92 @@ fun HomeScreen() {
                                 modifier = Modifier.size(80.dp)
                             )
                             Text(
-                                text = "$convertedTemperature ${getTemperatureSymbol(temperatureUnit)}",
-                                fontSize = 32.sp,
+                                text = "$convertedTemperature°${getTemperatureSymbol(temperatureUnit)}",
+                                fontSize = 25.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.White
+                                color = Color.Black
                             )
                             Text(
                                 text = weather.weather.firstOrNull()?.description?.replaceFirstChar { it.uppercaseChar() } ?: "N/A",
-                                fontSize = 18.sp,
+                                fontSize = 14.sp,
                                 color = Color.Gray
                             )
-                            Text(text = weather.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Card {
-                                WeatherDetailRow("Humidity", "${weather.main.humidity}%")
-                                WeatherDetailRow("Wind Speed", "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}")
-                                WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise))
+                            Text(text = weather.name, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)}
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.humdity),
+                                    contentDescription = "Humidity Icon",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(text = "${weather.main.humidity}%")
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                Image(
+                                    painter = painterResource(id = R.drawable.cloudy),
+                                    contentDescription = "Cloudiness Icon",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(text = "${weather.clouds.all}%")
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
                             }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {  Image(
+                                painter = painterResource(id = R.drawable.wind),
+                                contentDescription = "Wind Icon",
+                                modifier = Modifier.size(24.dp)
+                            )
+                                Text(
+                                    text = "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}"
+                                )
+
+                                Spacer(modifier = Modifier.width(16.dp))
+
+                                Image(
+                                    painter = painterResource(id = R.drawable.presure),
+                                    contentDescription = "Pressure Icon",
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Text(text = "${weather.main.pressure} hPa") }
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Row {
+                                    Image(
+                                        painter = painterResource(id = R.drawable.sunrise),
+                                        contentDescription = "Pressure Icon",
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Sunrise: ${formatTime(weather.sys.sunrise)}")
+                                    Spacer(modifier = Modifier.width(20.dp))
+
+
+                                    Image(
+                                        painter = painterResource(id = R.drawable.sunset),
+                                        contentDescription = "Pressure Icon",
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Text("Sunset: ${formatTime(weather.sys.sunset)}")
+
+
+
+                                }
+                                Spacer(modifier = Modifier.height(18.dp))
+
+
+
+
+
+//                            Card {
+//                                WeatherDetailRow("Humidity", "${weather.main.humidity}%")
+//                                WeatherDetailRow("Wind Speed", "${convertWindSpeed(weather.wind.speed, temperatureUnit ?: "metric")} ${if (temperatureUnit == "imperial") "mph" else "m/s"}")
+//                                WeatherDetailRow("Sunrise", formatTime(weather.sys.sunrise))
+//                            }
                         }
                     }
 
-                    Text("Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Hourly Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                     LazyRow {
                         items(forecastState.let { (it as? WeatherState.Success)?.weatherResponse?.list ?: emptyList() }) { forecast ->
                             HourlyForecastItem(forecast, sharedPrefs)
@@ -193,8 +255,8 @@ fun HomeScreen() {
                     when (forecastState) {
                         is WeatherState.Success -> {
                             val weatherData = (forecastState as WeatherState.Success).weatherResponse
-                            Text("5 Days Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                            Card { FiveDayForecast(weatherData.list, SharedPrefs.getInstance(context)) }
+                            Text("5 Days Forecast", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+                              FiveDayForecast(weatherData.list, SharedPrefs.getInstance(context))
                         }
                         is WeatherState.Failure -> {
                             Text(text = "Failed to load forecast", color = MaterialTheme.colorScheme.error, fontSize = 18.sp)
@@ -206,8 +268,8 @@ fun HomeScreen() {
                 }
             }
         }
-    }
-}
+
+
 
 
 @Composable
